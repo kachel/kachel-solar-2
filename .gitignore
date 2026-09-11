@@ -1,0 +1,17 @@
+# Build output
+/dist/
+/bin/
+
+# Runtime data (sensor logs / rollups)
+/data/
+*.jsonl
+
+# Local secrets / tunnel credentials
+*.pem
+/deploy/cloudflared/*.json
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/

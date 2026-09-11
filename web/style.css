@@ -1,0 +1,438 @@
+/* ==========================================================================
+   Design tokens — pulled 1:1 from the kachel.solar Figma file variables
+   ========================================================================== */
+:root {
+  /* colors */
+  --colors-surface-primary-solid: #0f380f;
+  --colors-surface-primary-transparent-80: rgba(15, 56, 15, 0.8);
+  --colors-surface-secondary: #f8ffdd;
+  --colors-text-primary: #f8ffdd;
+  --colors-text-secondary: #0f380f;
+  --colors-charge-full: #9bbc0f;
+  --colors-mid-green: #9bbc0f;
+  --colors-border-primary: #f8ffdd;
+  --colors-border-secondary: #0f380f;
+  --colors-footer-bg: rgba(155, 188, 15);
+
+  /* spacing */
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+
+  /* border radius */
+  --radius-mid: 4px;
+  --radius-full: 99px;
+
+  /* font size */
+  --font-size-sm: 12px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+
+  /* fonts (Intel One Mono is not on a public CDN — IBM Plex Mono covers both roles) */
+  --font-heading: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-body: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--colors-surface-secondary);
+  /* tiled leaf pattern, self-hosted (was a Figma MCP asset URL — see web/assets/) */
+  background-image: url("assets/dithering-effect.png");
+  /* background-repeat: no-repeat; */
+  background-position: center;
+  background-size: 100%;
+}
+
+a { color: inherit; }
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ---------- generic section header (auto-layout: hug width, center) ---------- */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--colors-surface-primary-transparent-80);
+}
+
+.header-title {
+  flex: 1 0 0;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--font-size-xl);
+  line-height: normal;
+  color: var(--colors-text-primary);
+  text-align: center;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+/* ---------- hero ---------- */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 222px;
+  padding: var(--spacing-lg);
+  background-color: var(--colors-surface-primary-transparent-80);
+}
+
+.hero-text {
+  flex: 1 0 0;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: var(--font-size-md);
+  line-height: var(--font-size-xl);
+  color: var(--colors-text-primary);
+  text-align: center;
+}
+
+.hero-text a {
+  text-decoration: underline;
+}
+
+/* ---------- job history / accordions ---------- */
+.jobs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  padding: 0 var(--spacing-lg);
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--colors-surface-primary-solid);
+  border: 2px solid var(--colors-border-primary);
+  border-radius: var(--radius-mid);
+}
+
+.accordion-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.job-info {
+  display: flex;
+  flex: 1 0 0;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  color: var(--colors-text-primary);
+}
+
+.job-title {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+}
+
+.job-sub {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+}
+
+.chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease;
+}
+
+.accordion.is-open .chevron { transform: rotate(180deg); }
+
+.accordion-body {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding-top: var(--spacing-sm);
+}
+
+.accordion.is-open .accordion-body { display: flex; }
+
+.accordion-body ul {
+  margin: 0;
+  padding-left: 18px;
+  width: 100%;
+  color: var(--colors-text-primary);
+}
+
+.accordion-body li {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--font-size-sm);
+  line-height: normal;
+  margin-bottom: var(--spacing-sm);
+}
+
+.accordion-body li:last-child { margin-bottom: 0; }
+
+.accordion-body .bold { font-weight: 700; }
+
+.btn-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--colors-surface-secondary);
+  color: var(--colors-text-secondary);
+  border: 4px solid var(--colors-border-secondary);
+  border-radius: var(--radius-full);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ---------- skills ---------- */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: 0 var(--spacing-lg);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--colors-surface-secondary);
+  color: var(--colors-text-secondary);
+  border-radius: var(--radius-full);
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: var(--font-size-sm);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.flower {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-xl);
+  color: var(--colors-text-primary);
+  line-height: 1;
+}
+
+/* ---------- projects ---------- */
+.card-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  width: 100%;
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 344px;
+  max-width: 100%;
+  background-color: var(--colors-surface-primary-transparent-80);
+  border: 2px solid var(--colors-border-primary);
+  border-radius: var(--radius-mid);
+  overflow: hidden;
+}
+
+.card-title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--colors-surface-primary-solid);
+}
+
+.card-title {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: var(--font-size-md);
+  color: var(--colors-text-primary);
+}
+
+.card-subtitle {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+  color: var(--colors-text-primary);
+}
+
+.card-description {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.card-description p {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--font-size-sm);
+  line-height: var(--font-size-lg);
+  color: var(--colors-text-primary);
+}
+
+.card-description a {
+  text-decoration: underline;
+}
+
+/* ---------- footer ---------- */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--colors-footer-bg);
+}
+
+.circle-button {
+  position: relative;
+  width: 68px;
+  height: 70px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.circle-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.circle-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 32px;
+  color: var(--colors-text-primary);
+}
+
+.battery {
+  position: relative;
+  width: 109px;
+  height: 50px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.battery-nub {
+  position: absolute;
+  left: 0;
+  top: 15px;
+  width: 9px;
+  height: 20px;
+  background-color: var(--colors-surface-primary-solid);
+  border-radius: 4px 0 0 4px;
+}
+
+.battery-shell {
+  position: absolute;
+  left: 9px;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100px;
+  height: 50px;
+  background-color: var(--colors-surface-primary-solid);
+  border-radius: 12px;
+}
+
+/* Cells default to "empty" until the live reading comes in; script.js adds
+   .cell-filled based on the /api/battery percentage. */
+.cell {
+  width: 20px;
+  height: 29px;
+  background-color: rgba(248, 255, 221, 0.2);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.cell.cell-filled {
+  background-color: var(--colors-charge-full);
+}
+
+/* Charging: a small bolt badge on the widget. */
+.battery.is-charging::after {
+  content: "⚡";
+  position: absolute;
+  top: -12px;
+  right: -6px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Stale/unreachable: dimmed, distinct from a 404 — the data is just old. */
+.battery.is-stale {
+  opacity: 0.55;
+}
+
+/* ---------- responsive tweaks ---------- */
+@media (max-width: 400px) {
+  .card { width: 100%; }
+}

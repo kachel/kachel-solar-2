@@ -1,0 +1,26 @@
+# cloudflared ingress for kachel.solar.
+#
+# The tunnel is ONLY the network path (DNS + secure tunnel to the Pi) - not a
+# CDN or static host. Everything, static pages included, is served by kacheld
+# on the Pi. kachel.work is deliberately absent: it is the off-Pi backup a
+# visitor should still reach when the battery is flat and this tunnel is down.
+#
+# Replace <TUNNEL_ID> after `cloudflared tunnel create kachel-solar`, and make
+# sure the credentials JSON it writes lands at the path below.
+
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+# Small origin pool; the Pi Zero is not fast.
+originRequest:
+  connectTimeout: 10s
+  keepAliveConnections: 4
+  keepAliveTimeout: 90s
+
+ingress:
+  - hostname: kachel.solar
+    service: http://127.0.0.1:8080
+  - hostname: www.kachel.solar
+    service: http://127.0.0.1:8080
+  # Anything else that resolves to this tunnel gets a clean 404.
+  - service: http_status:404

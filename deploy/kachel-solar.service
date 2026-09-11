@@ -1,0 +1,44 @@
+[Unit]
+Description=kachel.solar server (static site + INA219 battery API)
+Documentation=https://kachel.solar/writeup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kachel
+Group=kachel
+# Read the INA219 over I2C without running as root.
+SupplementaryGroups=i2c
+
+ExecStart=/usr/local/bin/kacheld \
+  -addr 127.0.0.1:8080 \
+  -web /var/www/kachel.solar \
+  -data /var/lib/kachel-solar \
+  -i2c-bus /dev/i2c-1 \
+  -sample-interval 10s
+
+Restart=on-failure
+RestartSec=5
+
+# systemd creates and owns /var/lib/kachel-solar for us.
+StateDirectory=kachel-solar
+StateDirectoryMode=0750
+
+# Hardening: this process only needs to read its web dir, write its data dir,
+# and open /dev/i2c-1.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/var/lib/kachel-solar
+DeviceAllow=/dev/i2c-1 rw
+
+[Install]
+WantedBy=multi-user.target
