@@ -82,7 +82,8 @@ func TestINA219NegativeCurrent(t *testing.T) {
 	b := newFakeBus()
 	d, _ := newINA219(b)
 	b.regs[regBusVoltage] = uint16(925) << 3 // 3.700 V
-	b.regs[regCurrent] = uint16(int16(-1600)) // -160.0 mA (discharging)
+	current := int16(-1600)                  // -160.0 mA (discharging)
+	b.regs[regCurrent] = uint16(current)
 
 	s, err := d.Read()
 	if err != nil {
