@@ -315,6 +315,7 @@ a { color: inherit; }
 
 .card-description {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -333,6 +334,67 @@ a { color: inherit; }
 
 .card-description a {
   text-decoration: underline;
+}
+
+/* ---------- sensor stats ---------- */
+.stat-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--spacing-sm);
+}
+
+.stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--colors-text-primary);
+  opacity: 0.85;
+}
+
+.stat-value {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  color: var(--colors-text-primary);
+}
+
+.stat-footnote {
+  margin: var(--spacing-sm) 0 0;
+  width: 100%;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+  color: var(--colors-text-primary);
+  opacity: 0.7;
+}
+
+.sensor-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--spacing-lg);
+  background-color: var(--colors-surface-primary-transparent-80);
+}
+
+.sensor-status[hidden] {
+  display: none;
+}
+
+.sensor-status p {
+  margin: 0;
+  max-width: 480px;
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-size-lg);
+  color: var(--colors-text-primary);
+  text-align: center;
 }
 
 /* ---------- footer ---------- */
