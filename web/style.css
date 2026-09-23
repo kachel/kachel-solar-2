@@ -40,9 +40,19 @@ body {
   margin: 0;
   font-family: var(--font-body);
   background-color: var(--colors-surface-secondary);
-  /* tiled leaf pattern, self-hosted (was a Figma MCP asset URL — see web/assets/) */
+}
+
+/* Background lives on a fixed pseudo-element, not on body directly — a
+   body background repositions relative to the document's total height, so
+   it visibly jumps whenever content height changes (accordion open/close,
+   resize, etc.). Pinning it to the viewport instead makes it immune to
+   that, and avoids background-attachment:fixed's spotty mobile support. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background-image: url("assets/dithering-effect.png");
-  /* background-repeat: no-repeat; */
   background-position: center;
   background-size: 100%;
 }
@@ -497,4 +507,12 @@ a { color: inherit; }
 /* ---------- responsive tweaks ---------- */
 @media (max-width: 400px) {
   .card { width: 100%; }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .cell {
+    transition: none;
+  }
 }

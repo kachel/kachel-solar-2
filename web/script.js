@@ -2,7 +2,8 @@ document.querySelectorAll('.accordion').forEach((accordion) => {
   const trigger = accordion.querySelector('.accordion-title');
 
   trigger.addEventListener('click', () => {
-    accordion.classList.toggle('is-open');
+    const isOpen = accordion.classList.toggle('is-open');
+    trigger.setAttribute('aria-expanded', String(isOpen));
   });
 });
 
