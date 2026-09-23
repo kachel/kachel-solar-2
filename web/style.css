@@ -69,6 +69,14 @@ a { color: inherit; }
   margin: 0 auto;
 }
 
+@media (min-width: 640px) {
+  .layout { max-width: 640px; }
+}
+
+@media (min-width: 1024px) {
+  .layout { max-width: 960px; }
+}
+
 /* ---------- generic section header (auto-layout: hug width, center) ---------- */
 .section-header {
   display: flex;
@@ -111,6 +119,7 @@ a { color: inherit; }
 
 .hero-text {
   flex: 1 0 0;
+  max-width: 65ch;
   margin: 0;
   font-family: var(--font-heading);
   font-weight: 400;
@@ -210,6 +219,7 @@ a { color: inherit; }
   margin: 0;
   padding-left: 18px;
   width: 100%;
+  max-width: 65ch;
   color: var(--colors-text-primary);
 }
 
@@ -229,6 +239,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-lg);
   background-color: var(--colors-surface-secondary);
   color: var(--colors-text-secondary);
