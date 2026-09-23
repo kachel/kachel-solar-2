@@ -12,7 +12,8 @@
   --colors-mid-green: #9bbc0f;
   --colors-border-primary: #f8ffdd;
   --colors-border-secondary: #0f380f;
-  --colors-footer-bg: rgba(155, 188, 15);
+  --colors-footer-bg: rgba(155, 188, 15, 1);
+  --colors-cell-empty: rgba(248, 255, 221, 0.2);
 
   /* spacing */
   --spacing-sm: 12px;
@@ -480,7 +481,7 @@ a { color: inherit; }
 .cell {
   width: 20px;
   height: 29px;
-  background-color: rgba(248, 255, 221, 0.2);
+  background-color: var(--colors-cell-empty);
   border-radius: 2px;
   transition: background-color 0.2s ease;
 }
