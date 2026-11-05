@@ -34,7 +34,7 @@
 
   /* ================= canvas: composition notebook cover ================= */
   .canvas {
-    position: relative; overflow: hidden; min-height: 0; background-color: #0c0c0f;
+    position: relative; overflow: hidden; min-height: 0; background-color: #3a3540;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.075' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -34 15.6'/></filter><rect width='420' height='420' filter='url(%23n)'/></svg>");
     background-size: 420px 420px;
     box-shadow: inset 0 0 50px rgba(0,0,0,.55);
@@ -495,9 +495,10 @@ const KEY = 'lookin-up-stickers-v3';
 const SWATCHES = [['#6b7280', 'Graphite'], ['#4f6df5', 'Blue'], ['#14a39a', 'Teal'], ['#3fa34d', 'Green'], ['#d99a00', 'Amber'], ['#f0644d', 'Coral'], ['#e5589b', 'Rose'], ['#8b5cf6', 'Violet']];
 const state = {
   placed: { city: { fx: .12, fy: .2, r: -6 }, time: { fx: .78, fy: .3, r: 7 } }, order: ['city', 'time'], page: 0, open: true, unit: 'F',
-  theme: 'notebook', mode: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', color: '#4f6df5', cover: '#0c0c0f', palette: 'candy', gridLock: false, gridOrder: [], city: null, unitSet: false
+  theme: 'notebook', mode: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', color: '#4f6df5', cover: '#3a3540', palette: 'candy', gridLock: false, gridOrder: [], city: null, unitSet: false
 };
 try { Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+if (state.cover === '#0c0c0f' || state.cover === '#70737a') state.cover = '#3a3540';   // earlier defaults are retired; saved copies move to the current one
 if (state.city) Object.assign(CHI, { name: state.city.name, lat: state.city.lat, lon: state.city.lon, tz: state.city.tz });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };unit = state.unit;
 let justPlaced = null, selectedId = null;
@@ -546,7 +547,7 @@ function buildSwatches() {
 function setColor(c) { state.color = c; save(); applyTheme(); renderAll(); }
 
 /* ---- notebook cover color: the marble keeps its speckle, on the picked color ---- */
-const COVERS = [['#0c0c0f', 'Black'], ['#1e3a8a', 'Navy'], ['#991b1b', 'Red'], ['#166534', 'Green'], ['#5b21b6', 'Purple'], ['#0f766e', 'Teal'], ['#be185d', 'Berry'], ['#57534e', 'Stone']];
+const COVERS = [['#3a3540', 'Gray'], ['#1e3a8a', 'Navy'], ['#991b1b', 'Red'], ['#166534', 'Green'], ['#5b21b6', 'Purple'], ['#0f766e', 'Teal'], ['#be185d', 'Berry'], ['#57534e', 'Stone']];
 const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const luminance = ([r, g, b]) => [r, g, b].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0);
 function marbleUrl(speckle) {                       // same noise as the stylesheet, with a chosen speckle color
@@ -556,7 +557,7 @@ function marbleUrl(speckle) {                       // same noise as the stylesh
 function applyCover() {
   const cv = $('canvas').style;
   if (isSimple()) { cv.backgroundColor = ''; cv.backgroundImage = ''; return; }    // the simple theme paints its own background
-  const base = state.cover || '#0c0c0f';
+  const base = state.cover || '#3a3540';
   cv.backgroundColor = base;
   cv.backgroundImage = marbleUrl([1, 1, 1]);   // white speckle on every cover; on a light cover the contrast stays light on light
 }
