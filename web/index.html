@@ -47,6 +47,14 @@
   .logo { position: absolute; left: 14px; top: 14px; width: 60px; height: 60px; z-index: 6; border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, #d9ccff, #a77bff); border: 3px solid var(--ink); box-shadow: 0 0 0 5px #fff, 0 6px 6px rgba(0,0,0,.5); display: grid; place-items: center; }
   .logo svg { width: 74%; height: auto; }
+  @keyframes ufo-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes ufo-flash { 0%, 100% { opacity: 1; } 50% { opacity: .1; } }
+  @media (prefers-reduced-motion: no-preference) {
+    .logo:hover svg { animation: ufo-bob .9s ease-in-out infinite; }
+    .logo:hover .lt { animation: ufo-flash .45s steps(2, jump-none) infinite; }
+    .logo:hover .lt:nth-of-type(2) { animation-delay: .15s; }
+    .logo:hover .lt:nth-of-type(3) { animation-delay: .3s; }
+  }
   .top-actions { position: absolute; right: 14px; top: 16px; z-index: 1100; display: flex; gap: 12px; align-items: center; }
   .top-actions, .logo { transition: opacity .35s ease, transform .35s ease, visibility 0s; }
   .app.idle .top-actions, .app.idle .logo { opacity: 0; transform: translateY(-14px); pointer-events: none; visibility: hidden; transition: opacity .45s ease, transform .45s ease, visibility 0s .45s; }
@@ -271,7 +279,7 @@
   <main class="canvas" id="canvas">
     <div class="spine" aria-hidden="true"></div>
     <div class="logo" role="img" aria-label="Looking Up">
-      <svg viewBox="-46 -30 92 86" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><polygon points="-14,10 14,10 28,52 -28,52" fill="url(#bm)" style="opacity:var(--beam-o,1)"/><path d="M -16 -3 A 16 16 0 0 1 16 -3 Z" style="fill:var(--lg-dome);stroke:var(--ink)" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="0" cy="3" rx="37" ry="11" style="fill:var(--lg-body);stroke:var(--ink)" stroke-width="3.5"/><circle cx="-22" cy="4" r="3.4" style="fill:var(--lg-l1)"/><circle cx="0" cy="7" r="3.4" style="fill:var(--lg-l2)"/><circle cx="22" cy="4" r="3.4" style="fill:var(--lg-l3)"/></svg>
+      <svg viewBox="-46 -30 92 86" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><polygon points="-14,10 14,10 28,52 -28,52" fill="url(#bm)" style="opacity:var(--beam-o,1)"/><path d="M -16 -3 A 16 16 0 0 1 16 -3 Z" style="fill:var(--lg-dome);stroke:var(--ink)" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="0" cy="3" rx="37" ry="11" style="fill:var(--lg-body);stroke:var(--ink)" stroke-width="3.5"/><circle class="lt" cx="-22" cy="4" r="3.4" style="fill:var(--lg-l1)"/><circle class="lt" cx="0" cy="7" r="3.4" style="fill:var(--lg-l2)"/><circle class="lt" cx="22" cy="4" r="3.4" style="fill:var(--lg-l3)"/></svg>
     </div>
     <div class="top-actions">
       <button class="gear trash" id="trash" type="button" aria-label="Remove selected sticker">
