@@ -412,13 +412,9 @@ setPalette(NOTEBOOK);
 /* sticker palettes (Notebook theme). Each one overrides colors of the base "candy" set; the UV and AQI scale colors stay standard. */
 const PALETTES = [
   ['candy', 'Candy', {}],
-  ['pastel', 'Pastel', { INK: '#3a3550', YEL: '#fde68a', BLU: '#a5d8ff', PNK: '#fbb6ce', CRM: '#fff7d6', HI1: '#fdba9c', HI2: '#b4c5ff', NAVY: '#4a4e8a', DASH: '#8d92c9', SG1: '#ffd9c2', SG2: '#d9ccff', SUNB: '#7d8be0', CLOUDF: '#f4fbff', BLUSH: '#f9a8c0' }],
-  ['retro', 'Retro 70s', { INK: '#2d1f1a', YEL: '#f2b134', BLU: '#4aa3a2', PNK: '#e07a5f', CRM: '#f6e7c1', HI1: '#d9632d', HI2: '#6b9080', NAVY: '#3d2c4d', DASH: '#8a6f9e', SG1: '#f4a261', SG2: '#bc6c8a', SUNB: '#52507a', CLOUDF: '#f6ecd2', BLUSH: '#e8957b' }],
   ['neon', 'Neon', { INK: '#14123a', YEL: '#f9f871', BLU: '#00e5ff', PNK: '#ff3dcb', CRM: '#fdfcb5', HI1: '#ff9e00', HI2: '#9d7bff', NAVY: '#1d1a5c', DASH: '#6a63d8', SG1: '#ff9e6b', SG2: '#b388ff', SUNB: '#3b30c9', CLOUDF: '#e0fbff', BLUSH: '#ff7be0' }],
   ['forest', 'Forest', { INK: '#1f2a22', YEL: '#e9c46a', BLU: '#8ecae6', PNK: '#e5989b', CRM: '#f6efc8', HI1: '#e76f51', HI2: '#84a98c', NAVY: '#1b4332', DASH: '#52796f', SG1: '#f2cc8f', SG2: '#a3b18a', SUNB: '#2d6a4f', CLOUDF: '#f1f7ee', BLUSH: '#e5989b' }],
   ['ocean', 'Ocean', { INK: '#0b1f3a', YEL: '#ffe066', BLU: '#48cae4', PNK: '#ff9fb2', CRM: '#fff3c4', HI1: '#ff8c69', HI2: '#4361ee', NAVY: '#03045e', DASH: '#5a74d6', SG1: '#9bdcf0', SG2: '#8ea2f5', SUNB: '#0077b6', CLOUDF: '#eaf8ff', BLUSH: '#ff9fb2' }],
-  ['sunset', 'Sunset', { INK: '#2a1630', YEL: '#ffb703', BLU: '#7ec8e3', PNK: '#ff6b9d', CRM: '#ffe8b0', HI1: '#ff7b54', HI2: '#b56bd4', NAVY: '#3a1c4a', DASH: '#9d6bb5', SG1: '#ff9966', SG2: '#c77dff', SUNB: '#6a2c91', CLOUDF: '#fff1e6', BLUSH: '#ff8fa3' }],
-  ['berry', 'Berry', { INK: '#2a1030', YEL: '#ffd166', BLU: '#a5b4fc', PNK: '#e84a9d', CRM: '#ffe3f0', HI1: '#ff6b8b', HI2: '#9d4edd', NAVY: '#3c096c', DASH: '#9d4edd', SG1: '#ffafcc', SG2: '#c77dff', SUNB: '#5a189a', CLOUDF: '#fff0f7', BLUSH: '#ff8fb8' }]
 ];
 const stickerPalette = id => ({ ...NOTEBOOK, ...((PALETTES.find(p => p[0] === id) || [])[2] || {}) });
 
@@ -554,6 +550,7 @@ const state = {
   clock: new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12 === false ? '24' : '12'   // follows the device until changed in settings
 };
 try { Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+if (!PALETTES.some(p => p[0] === state.palette)) state.palette = 'candy';   // a removed palette falls back to the default
 if (state.cover === '#0c0c0f' || state.cover === '#70737a') state.cover = '#3a3540';   // earlier defaults are retired; saved copies move to the current one
 if (state.city) Object.assign(CHI, { name: state.city.name, lat: state.city.lat, lon: state.city.lon, tz: state.city.tz });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };unit = state.unit;
