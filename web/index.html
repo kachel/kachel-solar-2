@@ -1149,8 +1149,8 @@ function startIntro() {
     const from = panel.getBoundingClientRect();
     panel.classList.remove('intro'); panel.removeAttribute('aria-modal'); only.hidden = true;
     back.classList.add('out'); note.classList.add('out');
-    const to = panel.getBoundingClientRect();
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const to = panel.getBoundingClientRect(), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!still) {
       panel.style.transformOrigin = 'top left';
       panel.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`;
       void panel.offsetWidth;
@@ -1158,7 +1158,7 @@ function startIntro() {
       panel.style.transform = 'none';
     }
     $('gear').setAttribute('aria-expanded', 'true');
-    setTimeout(() => { panel.style.transition = panel.style.transform = panel.style.transformOrigin = ''; back.hidden = note.hidden = true; back.classList.remove('out'); note.classList.remove('out'); }, 600);
+    setTimeout(() => { panel.style.transition = panel.style.transform = panel.style.transformOrigin = ''; back.hidden = note.hidden = true; back.classList.remove('out'); note.classList.remove('out'); closePanel(); }, still ? 0 : 600);   // lands at the gear, then tucks away
   };
 }
 startIntro();
