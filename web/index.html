@@ -46,6 +46,7 @@
   /* ================= top-left logo + top-right controls ================= */
   .logo { position: absolute; left: 14px; top: 14px; width: 60px; height: 60px; z-index: 6; border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, #d9ccff, #a77bff); border: 3px solid var(--ink); box-shadow: 0 0 0 5px #fff, 0 6px 6px rgba(0,0,0,.5); display: grid; place-items: center; }
+  .logo { cursor: pointer; text-decoration: none; color: inherit; -webkit-tap-highlight-color: transparent; }
   .logo svg { width: 74%; height: auto; }
   @keyframes ufo-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
   @keyframes ufo-flash { 0%, 100% { opacity: 1; } 50% { opacity: .1; } }
@@ -54,6 +55,9 @@
     .logo:hover .lt { animation: ufo-flash .45s steps(2, jump-none) infinite; }
     .logo:hover .lt:nth-of-type(2) { animation-delay: .15s; }
     .logo:hover .lt:nth-of-type(3) { animation-delay: .3s; }
+    @keyframes ufo-away { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 22% { transform: translate(0, 6px) scale(1.05); opacity: 1; } 100% { transform: translate(34px, -130px) scale(.15) rotate(18deg); opacity: 0; } }
+    .logo.launch svg { animation: ufo-away .75s cubic-bezier(.5, 0, .9, .4) forwards; }
+    .logo.launch .lt { animation: ufo-flash .15s steps(2, jump-none) infinite; }
   }
   .top-actions { position: absolute; right: 14px; top: 16px; z-index: 1100; display: flex; gap: 12px; align-items: center; }
   .top-actions, .logo { transition: opacity .35s ease, transform .35s ease, visibility 0s; }
@@ -278,9 +282,9 @@
 <div class="app" id="app" data-open="true">
   <main class="canvas" id="canvas">
     <div class="spine" aria-hidden="true"></div>
-    <div class="logo" role="img" aria-label="Looking Up">
+    <a class="logo" href="https://kachel.work" aria-label="kachel.work">
       <svg viewBox="-46 -30 92 86" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><polygon points="-14,10 14,10 28,52 -28,52" fill="url(#bm)" style="opacity:var(--beam-o,1)"/><path d="M -16 -3 A 16 16 0 0 1 16 -3 Z" style="fill:var(--lg-dome);stroke:var(--ink)" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="0" cy="3" rx="37" ry="11" style="fill:var(--lg-body);stroke:var(--ink)" stroke-width="3.5"/><circle class="lt" cx="-22" cy="4" r="3.4" style="fill:var(--lg-l1)"/><circle class="lt" cx="0" cy="7" r="3.4" style="fill:var(--lg-l2)"/><circle class="lt" cx="22" cy="4" r="3.4" style="fill:var(--lg-l3)"/></svg>
-    </div>
+    </a>
     <div class="top-actions">
       <button class="gear trash" id="trash" type="button" aria-label="Remove selected sticker">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
@@ -1061,6 +1065,14 @@ $('tab').onclick = () => { state.open = !state.open; save(); app.dataset.open = 
 $('prev').onclick = () => { const pages = $('dots').children.length; state.page = (state.page - 1 + pages) % pages; save(); renderDrawer(); };
 $('next').onclick = () => { const pages = $('dots').children.length; state.page = (state.page + 1) % pages; save(); renderDrawer(); };
 document.querySelectorAll('.units button').forEach(b => b.onclick = () => { unit = state.unit = b.dataset.unit; state.unitSet = true; save(); renderAll(); });
+/* logo: the UFO flies off, then the browser follows the link to kachel.work (modified clicks and reduced motion go straight through) */
+const logoEl = document.querySelector('.logo');
+logoEl.addEventListener('click', e => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0 || matchMedia('(prefers-reduced-motion: reduce)').matches || logoEl.classList.contains('launch')) return;
+  e.preventDefault(); logoEl.classList.add('launch');
+  setTimeout(() => { location.href = logoEl.href; }, 700);
+});
+addEventListener('pageshow', () => logoEl.classList.remove('launch'));   // coming back via the back button: UFO returns
 /* some tablet browsers (Fire / Silk-era Chrome) report 100vh taller than the visible page, pushing the drawer tab off screen; pin the app to the real inner height */
 const fitHeight = () => document.documentElement.style.setProperty('--app-h', innerHeight + 'px');
 fitHeight(); renderCanvas(); renderDrawer();
