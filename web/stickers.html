@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Looking Up – sticker canvas and drawer</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b1d2a;
+    --cream: #fff6dc;
+    --sheet: #fbf1d6;
+    --purple: #a77bff;
+    --spine: #f4a3b8;
+    --bg: #fff;
+    --dot: rgba(0,0,0,.14);
+    --line: rgba(0,0,0,.2);
+    --f1: #eee; --f2: #ddd; --f3: #bbb;
+    --lg-dome: #6ee7b7; --lg-body: #fff; --lg-l1: #ffd23f; --lg-l2: #ff7ab8; --lg-l3: #5ec8ff;
+    --drawer-h: 252px;
+    --drawer-w: 400px;
+    --drawer-w-closed: 118px;
+    --spine-w: 30px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; background: #0b0b0d; font-family: 'Nunito', system-ui, sans-serif; color: var(--ink); }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px dashed var(--purple); outline-offset: 5px; }
+
+  /* ================= layout ================= */
+  .app { height: 100vh; height: 100dvh; display: grid; grid-template-rows: 1fr auto; }
+  .drawer { position: relative; height: var(--drawer-h); transition: height .28s ease; z-index: 30; }
+  .app[data-open="false"] .drawer { height: 0; }
+
+  /* ================= canvas: composition notebook cover ================= */
+  .canvas {
+    position: relative; overflow: hidden; min-height: 0; background-color: #0c0c0f;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.075' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -34 15.6'/></filter><rect width='420' height='420' filter='url(%23n)'/></svg>");
+    background-size: 420px 420px;
+    box-shadow: inset 0 0 50px rgba(0,0,0,.55);
+  }
+  .spine { position: absolute; left: 0; top: 0; bottom: 0; width: var(--spine-w); z-index: 1;
+    background: linear-gradient(90deg, #e98aa4, var(--spine) 40%, #f9b9c9); border-right: 3px solid rgba(0,0,0,.35); }
+  .spine::after { content: ''; position: absolute; top: 0; bottom: 0; right: 7px; border-right: 2.5px dashed rgba(255,255,255,.7); }
+
+  /* ================= top-left logo + top-right controls ================= */
+  .logo { position: absolute; left: 14px; top: 14px; width: 60px; height: 60px; z-index: 6; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #d9ccff, #a77bff); border: 3px solid var(--ink); box-shadow: 0 0 0 5px #fff, 0 6px 6px rgba(0,0,0,.5); display: grid; place-items: center; }
+  .logo svg { width: 74%; height: auto; }
+  .top-actions { position: absolute; right: 14px; top: 16px; z-index: 1100; display: flex; gap: 12px; align-items: center; }
+  .top-actions, .logo { transition: opacity .35s ease, transform .35s ease, visibility 0s; }
+  .app.idle .top-actions, .app.idle .logo { opacity: 0; transform: translateY(-14px); pointer-events: none; visibility: hidden; transition: opacity .45s ease, transform .45s ease, visibility 0s .45s; }
+  .units, .gear { background: #fff; border: 3px solid var(--ink); box-shadow: 0 0 0 5px #fff, 0 6px 6px rgba(0,0,0,.5); }
+  .units { display: flex; gap: 4px; padding: 4px; border-radius: 999px; }
+  .units button { font: 800 17px/1 'Baloo 2', sans-serif; min-width: 46px; min-height: 40px; border: 0; border-radius: 999px; padding: 0 12px; background: transparent; cursor: pointer; transition: background-color .15s; }
+  .units button:hover { background: #f1ecff; }
+  .units button[aria-pressed="true"] { background: #ffd23f; box-shadow: inset 0 0 0 2.5px var(--ink); }
+  .gear { width: 54px; height: 54px; border-radius: 50%; padding: 0; cursor: pointer; display: grid; place-items: center; transition: background-color .15s; }
+  .gear:hover { background: #f1ecff; }
+  .gear svg { width: 26px; height: 26px; }
+  .gear { transition: background-color .15s, transform .15s, opacity .15s; }
+  .trash:not(.show) { opacity: 0; transform: scale(.6); visibility: hidden; pointer-events: none; transition: opacity .15s, transform .15s, visibility 0s .15s; }
+  .trash.hot { background: #ff4d6a; color: #fff; transform: scale(1.32); box-shadow: 0 0 0 5px #fff, 0 0 0 9px #ff4d6a; }
+  .trash.hot svg { animation: bump .5s ease infinite; }
+  .sticker .rz { position: absolute; right: -24px; bottom: -24px; width: 30px; height: 30px; display: grid; place-items: center; background: #fff; color: var(--ink); border: 2.5px solid var(--ink); border-radius: 50%; cursor: nwse-resize; touch-action: none; pointer-events: auto; z-index: 3; box-shadow: 0 2px 3px rgba(0,0,0,.4); }
+  .sticker .rz::before { content: ''; position: absolute; inset: -12px; }
+  .sticker .rz svg { width: 16px; height: 16px; }
+  .sticker.resizing { filter: drop-shadow(0 10px 8px rgba(0,0,0,.45)); }
+  .tool[aria-pressed="true"], .tool[aria-pressed="true"]:hover { background: #ffd23f; }
+  .cell-hint { position: absolute; z-index: 5; pointer-events: none; border: 3px dashed #fff; border-radius: 16px; background: rgba(255, 255, 255, .14); transition: left .12s, top .12s, width .12s, height .12s; }
+  .tool { touch-action: manipulation; }
+  .tool[aria-disabled="true"] { opacity: .5; cursor: default; }
+  .tool[aria-disabled="true"]:hover { background: #fff; }
+  .tool:active:not([aria-disabled="true"]) svg { transform: scale(.88); }
+  .tool svg { transition: transform .12s; }
+  .sticker.doomed::after { border-style: solid; border-color: #ff4d6a; background: rgba(255, 77, 106, .3); }
+  .sticker.doomed svg { transform: scale(.82); opacity: .75; transition: transform .14s ease, opacity .14s ease; }
+  .trash.bump svg { animation: bump .38s ease; }
+  @keyframes bump { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-14deg); } 65% { transform: rotate(10deg); } }
+  .sticker.sel::after { content: ''; position: absolute; inset: -10px; border: 3px dashed #fff; border-radius: 18px; pointer-events: none; }
+
+  /* ================= settings panel ================= */
+  .panel { position: absolute; z-index: 1200; right: 14px; top: 86px; width: min(310px, calc(100% - 28px)); padding: 14px 14px 6px; background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 0 0 5px #fff, 0 12px 20px rgba(0,0,0,.45); }
+  .panel[hidden] { display: none; }
+  .panel { max-height: calc(100% - 96px); overflow-y: auto; overscroll-behavior: contain; }
+  .cityfield { position: relative; }
+  #cityInput { width: 100%; min-height: 44px; padding: 0 14px; border: 2.5px solid var(--ink); border-radius: 14px; background: #fff; color: var(--ink); font: 700 16px/1 'Nunito', sans-serif; }
+  #cityInput::placeholder { color: var(--ink); opacity: .5; }
+  #cityList { list-style: none; margin: 6px 0 0; padding: 0; max-height: 224px; overflow-y: auto; border: 2.5px solid var(--ink); border-radius: 14px; background: #fff; }
+  #cityList[hidden] { display: none; }
+  #cityList li { min-height: 44px; padding: 7px 14px; display: flex; flex-direction: column; justify-content: center; cursor: pointer; font: 800 15px/1.15 'Nunito', sans-serif; }
+  #cityList li + li { border-top: 1.5px solid rgba(0,0,0,.12); }
+  #cityList li small { font: 600 12px/1.25 'Nunito', sans-serif; opacity: .7; }
+  #cityList li:hover, #cityList li[aria-selected="true"] { background: #f1ecff; }
+  .citymsg { margin: 6px 2px 0; min-height: 1.2em; font: 700 12px/1.3 'Nunito', sans-serif; opacity: .78; }
+  .panel .grp { margin: 0 0 12px; }
+  .panel h3 { margin: 0 0 6px; font: 800 12px/1 'Nunito', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; }
+  .seg { display: flex; gap: 4px; padding: 4px; border: 2.5px solid var(--ink); border-radius: 999px; }
+  .seg button { flex: 1; min-height: 40px; border: 0; border-radius: 999px; background: transparent; font: 800 15px/1 'Baloo 2', sans-serif; cursor: pointer; transition: background-color .15s; }
+  .seg button:hover { background: #f1ecff; }
+  .seg button[aria-pressed="true"] { background: #ffd23f; box-shadow: inset 0 0 0 2.5px var(--ink); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 0; margin: 0 -4px; }
+  .sw { width: 44px; height: 44px; border: 0; padding: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+  .sw i { width: 28px; height: 28px; border-radius: 50%; background: var(--c); border: 2.5px solid var(--ink); transition: transform .15s; }
+  .sw[aria-pressed="true"] i { transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 0 5.5px var(--ink); }
+  .custom { width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; position: relative; }
+  .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .custom i { width: 28px; height: 28px; border-radius: 50%; border: 2.5px dashed var(--ink); background: conic-gradient(#f66, #fd4, #6d8, #4cf, #a7f, #f6a, #f66); }
+  .palettes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pal { min-height: 56px; padding: 8px 10px; display: grid; gap: 6px; align-content: center; text-align: left; border: 2.5px solid var(--ink); border-radius: 14px; background: #fff; color: var(--ink); cursor: pointer; transition: background-color .15s; }
+  .pal:hover { background: #f1ecff; }
+  .pal[aria-pressed="true"] { background: #fff7cc; box-shadow: inset 0 0 0 2.5px var(--ink); }
+  .pal .chips { display: flex; gap: 4px; }
+  .pal .chips i { width: 18px; height: 18px; border-radius: 50%; background: var(--c); border: 2px solid var(--ink); }
+  .pal .nm { font: 800 13px/1 'Nunito', sans-serif; }
+
+  /* ================= stickers ================= */
+  .sticker { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; filter: drop-shadow(0 4px 3px rgba(0,0,0,.45)); transition: filter .15s; }
+  .sticker svg { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .sticker text { font-family: 'Baloo 2', 'Nunito', sans-serif; font-weight: 800; }
+  .sticker .lab { font-family: 'Nunito', sans-serif; font-weight: 800; }
+  .sticker:hover { filter: drop-shadow(0 7px 5px rgba(0,0,0,.5)); }
+  .sticker.drag { cursor: grabbing; z-index: 1000; filter: drop-shadow(0 16px 10px rgba(0,0,0,.5)); }
+  .canvas .sticker { position: absolute; left: 0; top: 0; z-index: 10; }
+  #dragLayer .sticker { position: fixed; z-index: 1000; }
+  .sticker.pop svg { animation: pop .34s cubic-bezier(.3, 1.6, .5, 1); }
+  @keyframes pop { 0% { transform: scale(.82); } 100% { transform: scale(1); } }
+
+  /* ================= drawer: the sticker sheet ================= */
+  .drawer-inner { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; opacity: 1; transition: opacity .2s ease;
+    background-color: var(--sheet); background-image: radial-gradient(rgba(27,29,42,.13) 1.6px, transparent 2px); background-size: 20px 20px;
+    box-shadow: 0 -8px 18px rgba(0,0,0,.35); }
+  .app[data-open="false"] .drawer-inner { opacity: 0; pointer-events: none; }
+
+  .tab { position: absolute; right: 12px; top: -48px; width: 78px; height: 48px; border: 0; padding: 0; cursor: pointer; z-index: 5; display: grid; place-items: center; color: var(--ink);
+    background: repeating-linear-gradient(45deg, #ff9ec4 0 9px, #fff 9px 18px); transform: rotate(-3deg); filter: drop-shadow(0 3px 2px rgba(0,0,0,.45));
+    clip-path: polygon(0 0, 5% 25%, 0 50%, 5% 75%, 0 100%, 100% 100%, 95% 75%, 100% 50%, 95% 25%, 100% 0); transition: transform .15s; }
+  .tab:hover { transform: rotate(-1deg) translateY(-2px); }
+  .tab span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 2.5px solid var(--ink); }
+  .tab svg { width: 20px; height: 20px; transition: transform .28s ease; }
+  .app[data-open="false"] .tab svg { transform: rotate(180deg); }
+
+  .slots { flex: 1; display: flex; justify-content: space-evenly; align-items: center; padding: 18px 16px 0; min-height: 0; }
+  .slot { display: grid; place-items: center; min-width: 0; }
+  .slot:nth-child(1) { transform: translateY(-4px) rotate(-5deg); }
+  .slot:nth-child(2) { transform: translateY(2px) rotate(4deg); }
+  .slot:nth-child(3) { transform: translateY(-10px) rotate(-3deg); }
+  .slot:nth-child(4) { transform: translateY(8px) rotate(5deg); }
+
+  .nav { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 0 0 14px; }
+  .nav .arrow { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--ink); background: #fff; color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0; transition: transform .12s, box-shadow .12s, background-color .15s; }
+  .nav .arrow:hover:not(:disabled) { background: #f1ecff; }
+  .nav .arrow:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+  .nav .arrow:disabled { opacity: .35; cursor: default; }
+  .nav .arrow svg { width: 20px; height: 20px; }
+  .dots { display: flex; gap: 8px; align-items: center; }
+  .dot { width: 44px; height: 44px; border: 0; padding: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+  .dot::before { content: ''; width: 16px; height: 16px; border-radius: 50%; background: var(--c, #ff8fb8); border: 2.5px solid var(--ink); transition: transform .15s; }
+  .dot[aria-current="true"]::before { transform: scale(1.45); box-shadow: 0 0 0 3px #fff, 0 0 0 5.5px var(--ink); }
+  .dot:nth-child(2n)::before { --c: #ffd23f; }
+  .dot:nth-child(3n)::before { --c: #5ec8ff; }
+
+  /* ================= theme: simple (soft dots, light/dark, monochrome) ================= */
+  html[data-theme="simple"] { --purple: var(--ink); }
+  html[data-theme="simple"] body { background: var(--bg); }
+  html[data-theme="simple"] :focus-visible { outline: 2.5px solid var(--ink); outline-offset: 4px; }
+  html[data-theme="simple"] .canvas { background-color: var(--bg); background-image: radial-gradient(var(--dot) 1.6px, transparent 2px); background-size: 22px 22px; box-shadow: none; }
+  html[data-theme="simple"] .spine, html[data-theme="simple"]
+  html[data-theme="simple"] .logo { background: var(--f1); border: 2px solid var(--ink); box-shadow: none; }
+  html[data-theme="simple"] .units, html[data-theme="simple"] .gear, html[data-theme="simple"] .panel { background: var(--bg); border: 2px solid var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+  html[data-theme="simple"] .panel { box-shadow: 0 10px 28px rgba(0,0,0,.2); }
+  html[data-theme="simple"] .units button:hover, html[data-theme="simple"] .gear:hover, html[data-theme="simple"] .seg button:hover { background: var(--f1); }
+  html[data-theme="simple"] .units button[aria-pressed="true"], html[data-theme="simple"] .seg button[aria-pressed="true"] { background: var(--f3); box-shadow: none; }
+  html[data-theme="simple"] .seg { border-width: 2px; }
+  html[data-theme="simple"] #cityInput, html[data-theme="simple"] #cityList { border-width: 2px; border-radius: 14px; background: var(--bg); }
+  html[data-theme="simple"] #cityList li:hover, html[data-theme="simple"] #cityList li[aria-selected="true"] { background: var(--f1); }
+  html[data-theme="simple"] #cityList li + li { border-top-color: var(--line); }
+  html[data-theme="simple"] .trash.hot { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 5px var(--bg), 0 0 0 8px var(--ink); }
+  html[data-theme="simple"] .sticker.doomed::after { border-color: var(--ink); background: var(--dot); }
+  html[data-theme="simple"] .sticker .rz { border-radius: 0; background: var(--bg); border-width: 2px; }
+  html[data-theme="simple"] .tool[aria-pressed="true"], html[data-theme="simple"] .tool[aria-pressed="true"]:hover { background: var(--f3); }
+  html[data-theme="simple"] .cell-hint { border-color: var(--ink); background: var(--dot); border-radius: 0; }
+  html[data-theme="simple"] .sticker.sel::after { border-color: var(--ink); }
+  html[data-theme="simple"] .sw[aria-pressed="true"] i { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ink); }
+  html[data-theme="simple"] .sticker { filter: drop-shadow(0 2px 4px rgba(0,0,0,.16)); }
+  html[data-theme="simple"] .sticker:hover { filter: drop-shadow(0 4px 8px rgba(0,0,0,.22)); }
+  html[data-theme="simple"] .sticker.drag { filter: drop-shadow(0 14px 14px rgba(0,0,0,.28)); }
+  html[data-theme="simple"] .slot { transform: none !important; }
+  html[data-theme="simple"] .drawer-inner { background-color: var(--sheet); background-image: radial-gradient(var(--dot) 1.6px, transparent 2px); background-size: 22px 22px; border-top: 2px solid var(--ink); box-shadow: 0 -6px 18px rgba(0,0,0,.1); }
+  html[data-theme="simple"] .tab { background: var(--f2); border: 0; clip-path: none; transform: none; filter: none; border-radius: 14px 14px 0 0; box-shadow: inset 0 0 0 2px var(--ink); }
+  html[data-theme="simple"] .tab:hover { transform: none; background: var(--f3); }
+  html[data-theme="simple"] .tab span { background: transparent; border: 0; }
+  html[data-theme="simple"] .nav .arrow { background: var(--bg); border-width: 2px; box-shadow: none; }
+  html[data-theme="simple"] .nav .arrow:hover:not(:disabled) { background: var(--f1); }
+  html[data-theme="simple"] .nav .arrow:active:not(:disabled) { transform: scale(.94); }
+  html[data-theme="simple"] .dot::before { background: var(--f3); border-width: 2px; }
+  html[data-theme="simple"] .dot[aria-current="true"]::before { background: var(--ink); box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5px var(--ink); }
+  html[data-theme="simple"] {
+    --lg-dome: var(--f3); --lg-body: var(--f1); --lg-l1: var(--ink); --lg-l2: var(--ink); --lg-l3: var(--ink);
+  }
+
+  /* ================= mobile: compact top row ================= */
+  @media (max-width: 699px) {
+    .logo { left: 10px; top: 12px; width: 52px; height: 52px; }
+    .top-actions { right: 10px; top: 14px; gap: 6px; }
+    .gear { width: 44px; height: 44px; }
+    .gear svg { width: 22px; height: 22px; }
+    .units button { min-width: 38px; min-height: 36px; padding: 0 8px; font-size: 16px; }
+    .panel { top: 74px; right: 10px; max-height: calc(100% - 84px); }
+  }
+
+  /* ================= tablet ================= */
+  @media (min-width: 700px) {
+    :root { --spine-w: 38px; }
+    .logo { left: 30px; top: 28px; width: 80px; height: 80px; }
+    .top-actions { right: 22px; top: 32px; }
+    .panel { right: 22px; top: 102px; }
+  }
+
+  /* ================= desktop: drawer becomes a right sidebar ================= */
+  @media (min-width: 1100px) {
+    :root { --spine-w: 44px; }
+    .app { grid-template-rows: none; grid-template-columns: 1fr auto; }
+    .drawer { height: 100%; width: var(--drawer-w); transition: width .28s ease; }
+    .app[data-open="false"] .drawer { height: 100%; width: var(--drawer-w-closed); }
+    .drawer-inner { flex-direction: row-reverse; border-top: 0; box-shadow: -8px 0 18px rgba(0,0,0,.35); }
+    html[data-theme="simple"] .drawer-inner { border-left: 2px solid var(--ink); box-shadow: -6px 0 18px rgba(0,0,0,.1); }
+    .tab { right: auto; left: 14px; top: auto; bottom: 16px; width: 86px; height: 54px; }
+    html[data-theme="simple"] .tab { left: 0; bottom: 16px; border-radius: 0 14px 14px 0; }
+    .tab svg { transform: rotate(-90deg); }
+    .app[data-open="false"] .tab svg { transform: rotate(90deg); }
+    .slots { flex-direction: column; justify-content: space-evenly; padding: 24px 28px 96px 0; }
+    .slot { width: 100%; }
+    .slot:nth-child(1) { transform: translateX(26px) rotate(-5deg); }
+    .slot:nth-child(2) { transform: translateX(-52px) rotate(4deg); }
+    .slot:nth-child(3) { transform: translateX(48px) rotate(-3deg); }
+    .slot:nth-child(4) { transform: rotate(5deg); }
+    .nav { flex-direction: column; padding: 0 0 0 20px; gap: 12px; justify-content: center; }
+    .nav .arrow svg { transform: rotate(90deg); }
+    .dots { flex-direction: column; gap: 4px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer, .drawer-inner, .tab svg, .sticker, .tab, .units button, .seg button, .sw i { transition: none; }
+    .sticker.pop svg, .trash.bump svg, .trash.hot svg { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app" data-open="true">
+  <main class="canvas" id="canvas">
+    <div class="spine" aria-hidden="true"></div>
+    <div class="logo" role="img" aria-label="Looking Up">
+      <svg viewBox="-46 -30 92 86" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><polygon points="-14,10 14,10 28,52 -28,52" fill="url(#bm)" style="opacity:var(--beam-o,1)"/><path d="M -16 -3 A 16 16 0 0 1 16 -3 Z" style="fill:var(--lg-dome);stroke:var(--ink)" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="0" cy="3" rx="37" ry="11" style="fill:var(--lg-body);stroke:var(--ink)" stroke-width="3.5"/><circle cx="-22" cy="4" r="3.4" style="fill:var(--lg-l1)"/><circle cx="0" cy="7" r="3.4" style="fill:var(--lg-l2)"/><circle cx="22" cy="4" r="3.4" style="fill:var(--lg-l3)"/></svg>
+    </div>
+    <div class="top-actions">
+      <button class="gear trash" id="trash" type="button" aria-label="Remove selected sticker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      </button>
+      <button class="gear tool" id="grid" type="button" aria-label="Arrange stickers in a grid">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>      </button>
+      <button class="gear tool" id="shuffle" type="button" aria-label="Scatter stickers randomly. Double-tap to also randomize their sizes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h.01"/><path d="M16 8h.01"/><path d="M12 12h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>      </button>
+      <div class="units" role="group" aria-label="Temperature unit">
+        <button type="button" data-unit="C" aria-pressed="false">C°</button>
+        <button type="button" data-unit="F" aria-pressed="true">F°</button>
+      </div>
+      <button class="gear" id="gear" type="button" aria-label="Theme settings" aria-expanded="false" aria-controls="panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+
+    <section class="panel" id="panel" role="dialog" aria-label="Settings" hidden>
+      <div class="grp">
+        <h3 id="h-city">City</h3>
+        <div class="cityfield">
+          <input id="cityInput" type="search" role="combobox" aria-labelledby="h-city" aria-autocomplete="list" aria-expanded="false" aria-controls="cityList" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Search for a city">
+          <ul id="cityList" role="listbox" aria-labelledby="h-city" hidden></ul>
+        </div>
+        <p class="citymsg" id="cityMsg" aria-live="polite"></p>
+      </div>
+      <div class="grp">
+        <h3 id="h-theme">Theme</h3>
+        <div class="seg" role="group" aria-labelledby="h-theme">
+          <button type="button" data-theme-btn="notebook" aria-pressed="true">Notebook</button>
+          <button type="button" data-theme-btn="simple" aria-pressed="false">Simple</button>
+        </div>
+      </div>
+      <div class="grp notebook-only">
+        <h3 id="h-cover">Cover color</h3>
+        <div class="swatches" id="coverSwatches" role="group" aria-labelledby="h-cover"></div>
+      </div>
+      <div class="grp notebook-only">
+        <h3 id="h-palette">Sticker colors</h3>
+        <div class="palettes" id="palettes" role="group" aria-labelledby="h-palette"></div>
+      </div>
+      <div class="grp simple-only">
+        <h3 id="h-mode">Mode</h3>
+        <div class="seg" role="group" aria-labelledby="h-mode">
+          <button type="button" data-mode-btn="light" aria-pressed="true">Light</button>
+          <button type="button" data-mode-btn="dark" aria-pressed="false">Dark</button>
+        </div>
+      </div>
+      <div class="grp simple-only">
+        <h3 id="h-color">Color</h3>
+        <div class="swatches" id="swatches" role="group" aria-labelledby="h-color"></div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="drawer" id="drawer" aria-label="Sticker sheet">
+    <button class="tab" id="tab" type="button" aria-label="Toggle sticker drawer" aria-expanded="true">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></span>
+    </button>
+    <div class="drawer-inner">
+      <div class="slots" id="slots"></div>
+      <div class="nav" id="nav">
+        <button type="button" class="arrow" id="prev" aria-label="Previous drawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <div class="dots" id="dots"></div>
+        <button type="button" class="arrow" id="next" aria-label="Next drawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </aside>
+</div>
+<div id="dragLayer"></div>
+
+<script>
+/* ============ data (Chicago) ============ */
+const CHI = { name: 'Chicago', lat: 41.8781, lon: -87.6298, tz: 'America/Chicago' };
+// fallback sample, replaced by live Open-Meteo data when the fetch succeeds
+const data = { tempF: 54, feelsF: 51, highF: 64, lowF: 42, code: 0, isDay: 0, precip: 0, sunrise: '6:33 AM', sunset: '4:49 PM', moonPhase: 0.5, uvNow: 3, uvPeak: 5, aqi: 42 };
+
+const fmt12 = iso => { const [h, m] = iso.slice(11, 16).split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+const phaseName = p => p < .03 || p > .97 ? 'new moon' : p < .22 ? 'waxing crescent' : p < .28 ? 'first quarter' : p < .47 ? 'waxing gibbous' : p < .53 ? 'full moon' : p < .72 ? 'waning gibbous' : p < .78 ? 'last quarter' : 'waning crescent';
+const precipLabel = c => c >= 95 ? 'thunderstorm' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'snow' : [56, 57, 66, 67].includes(c) ? 'freezing rain' : c >= 51 && c <= 55 ? 'drizzle' : 'rain';
+
+async function loadData() {
+  try {
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${CHI.lat}&longitude=${CHI.lon}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=precipitation_probability,uv_index&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&temperature_unit=fahrenheit&timezone=${CHI.tz}&forecast_days=1`;
+    const j = await (await fetch(u)).json();
+    const hour = j.current.time.slice(0, 13) + ':00', i = j.hourly.time.indexOf(hour);
+    Object.assign(data, {
+      tempF: j.current.temperature_2m, feelsF: j.current.apparent_temperature, code: j.current.weather_code, isDay: j.current.is_day,
+      highF: j.daily.temperature_2m_max[0], lowF: j.daily.temperature_2m_min[0],
+      precip: j.hourly.precipitation_probability[i] ?? 0, sunrise: fmt12(j.daily.sunrise[0]), sunset: fmt12(j.daily.sunset[0]),
+      uvNow: j.hourly.uv_index[i] ?? 0, uvPeak: j.daily.uv_index_max[0] ?? 0
+    });
+  } catch (e) { /* keep fallback */ }
+  try {
+    const a = await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${CHI.lat}&longitude=${CHI.lon}&current=us_aqi&timezone=${CHI.tz}`)).json();
+    if (a.current && a.current.us_aqi != null) data.aqi = a.current.us_aqi;
+  } catch (e) { /* keep fallback */ }
+  try {
+    const SC = await import('https://cdn.jsdelivr.net/npm/suncalc@2.1.1/+esm');
+    data.moonPhase = (SC.getMoonIllumination || SC.default.getMoonIllumination)(new Date()).phase;
+  } catch (e) {
+    data.moonPhase = ((((Date.now() / 86400000) + 2440587.5) - 2451550.1) / 29.530588853 % 1 + 1) % 1; // synodic fallback
+  }
+}
+
+/* ============ palettes (swapped when the theme changes) ============ */
+let INK, YEL, BLU, PNK, CRM, HI1, HI2, NAVY, DASH, SG1, SG2, SUNB, CLOUDF, BLUSH, SHINE, ONDEEP, EDGE, EDGEW;
+const NOTEBOOK = { INK: '#1b1d2a', YEL: '#ffd23f', BLU: '#5ec8ff', PNK: '#ff7ab8', CRM: '#fff2c2', HI1: '#ff9a76', HI2: '#8fa8ff', NAVY: '#232656', DASH: '#6b6fb5', SG1: '#ffc08a', SG2: '#b8a6ff', SUNB: '#4b5bd6', CLOUDF: '#eaf7ff', BLUSH: '#ff8fa3', SHINE: '#ffffff', ONDEEP: '#ffffff', EDGE: '#ffffff', EDGEW: 11 };
+const setPalette = p => ({ INK, YEL, BLU, PNK, CRM, HI1, HI2, NAVY, DASH, SG1, SG2, SUNB, CLOUDF, BLUSH, SHINE, ONDEEP, EDGE, EDGEW } = p);
+setPalette(NOTEBOOK);
+/* sticker palettes (Notebook theme). Each one overrides colors of the base "candy" set; the UV and AQI scale colors stay standard. */
+const PALETTES = [
+  ['candy', 'Candy', {}],
+  ['pastel', 'Pastel', { INK: '#3a3550', YEL: '#fde68a', BLU: '#a5d8ff', PNK: '#fbb6ce', CRM: '#fff7d6', HI1: '#fdba9c', HI2: '#b4c5ff', NAVY: '#4a4e8a', DASH: '#8d92c9', SG1: '#ffd9c2', SG2: '#d9ccff', SUNB: '#7d8be0', CLOUDF: '#f4fbff', BLUSH: '#f9a8c0' }],
+  ['retro', 'Retro 70s', { INK: '#2d1f1a', YEL: '#f2b134', BLU: '#4aa3a2', PNK: '#e07a5f', CRM: '#f6e7c1', HI1: '#d9632d', HI2: '#6b9080', NAVY: '#3d2c4d', DASH: '#8a6f9e', SG1: '#f4a261', SG2: '#bc6c8a', SUNB: '#52507a', CLOUDF: '#f6ecd2', BLUSH: '#e8957b' }],
+  ['neon', 'Neon', { INK: '#14123a', YEL: '#f9f871', BLU: '#00e5ff', PNK: '#ff3dcb', CRM: '#fdfcb5', HI1: '#ff9e00', HI2: '#9d7bff', NAVY: '#1d1a5c', DASH: '#6a63d8', SG1: '#ff9e6b', SG2: '#b388ff', SUNB: '#3b30c9', CLOUDF: '#e0fbff', BLUSH: '#ff7be0' }],
+  ['forest', 'Forest', { INK: '#1f2a22', YEL: '#e9c46a', BLU: '#8ecae6', PNK: '#e5989b', CRM: '#f6efc8', HI1: '#e76f51', HI2: '#84a98c', NAVY: '#1b4332', DASH: '#52796f', SG1: '#f2cc8f', SG2: '#a3b18a', SUNB: '#2d6a4f', CLOUDF: '#f1f7ee', BLUSH: '#e5989b' }],
+  ['ocean', 'Ocean', { INK: '#0b1f3a', YEL: '#ffe066', BLU: '#48cae4', PNK: '#ff9fb2', CRM: '#fff3c4', HI1: '#ff8c69', HI2: '#4361ee', NAVY: '#03045e', DASH: '#5a74d6', SG1: '#9bdcf0', SG2: '#8ea2f5', SUNB: '#0077b6', CLOUDF: '#eaf8ff', BLUSH: '#ff9fb2' }],
+  ['sunset', 'Sunset', { INK: '#2a1630', YEL: '#ffb703', BLU: '#7ec8e3', PNK: '#ff6b9d', CRM: '#ffe8b0', HI1: '#ff7b54', HI2: '#b56bd4', NAVY: '#3a1c4a', DASH: '#9d6bb5', SG1: '#ff9966', SG2: '#c77dff', SUNB: '#6a2c91', CLOUDF: '#fff1e6', BLUSH: '#ff8fa3' }],
+  ['berry', 'Berry', { INK: '#2a1030', YEL: '#ffd166', BLU: '#a5b4fc', PNK: '#e84a9d', CRM: '#ffe3f0', HI1: '#ff6b8b', HI2: '#9d4edd', NAVY: '#3c096c', DASH: '#9d4edd', SG1: '#ffafcc', SG2: '#c77dff', SUNB: '#5a189a', CLOUDF: '#fff0f7', BLUSH: '#ff8fb8' }]
+];
+const stickerPalette = id => ({ ...NOTEBOOK, ...((PALETTES.find(p => p[0] === id) || [])[2] || {}) });
+
+/* monochrome palette from one picked color */
+function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0, s = 0;
+  if (d) { s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; }
+  return { h, s: s * 100 };
+}
+const hsl = (h, s, l) => `hsl(${Math.round(h)} ${Math.round(s)}% ${l}%)`;
+function monoPalette(hex, mode) {
+  const { h, s } = hexToHsl(hex), light = mode === 'light', sat = Math.min(s, 85);
+  const t = {
+    ink: hsl(h, sat * .35, light ? 11 : 94), bg: hsl(h, sat * .22, light ? 96 : 10), sheet: hsl(h, sat * .26, light ? 92 : 14),
+    f1: hsl(h, sat * .55, light ? 91 : 24), f2: hsl(h, sat * .7, light ? 80 : 33), f3: hsl(h, sat * .85, light ? 66 : 45),
+    deep: hsl(h, sat * .6, light ? 22 : 8), onDeep: hsl(h, sat * .3, 95), shine: hsl(h, sat * .4, light ? 98 : 62),
+    dot: light ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.13)', line: light ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.22)'
+  };
+  t.pal = { INK: t.ink, YEL: t.f2, BLU: t.f3, PNK: t.f2, CRM: t.onDeep, HI1: t.f1, HI2: t.f3, NAVY: t.deep, DASH: t.f3, SG1: t.f1, SG2: t.f3, SUNB: t.deep, CLOUDF: t.f1, BLUSH: t.f3, SHINE: t.shine, ONDEEP: t.onDeep, EDGE: '#ffffff', EDGEW: 0 };
+  return t;
+}
+
+/* ============ sticker artwork ============ */
+let unit = 'F';
+const deg = f => Math.round(unit === 'F' ? f : (f - 32) * 5 / 9);
+const ol = (tag, attrs, w) => (w ?? EDGEW) ? `<${tag} ${attrs} fill="${EDGE}" stroke="${EDGE}" stroke-width="${w ?? EDGEW}" stroke-linejoin="round"/>` : ''; // baked die-cut border (notebook only)
+const edge = d => ol('path', `d="${d}"`);
+
+function moonPath(phase) {
+  const R = 50, p = ((phase % 1) + 1) % 1, c = Math.cos(2 * Math.PI * p), rx = (Math.abs(c) * R).toFixed(2), waxing = p < .5;
+  const o = waxing ? 1 : 0, t = waxing ? (c > 0 ? 0 : 1) : (c > 0 ? 1 : 0);
+  return p < .01 || p > .99 ? '' : `M 50 0 A 50 50 0 0 ${o} 50 100 A ${rx} 50 0 0 ${t} 50 0 Z`;
+}
+function burst(cx, cy, r, bumps = 12, depth = 5) {
+  const pts = [];
+  for (let i = 0; i < 180; i++) { const a = i / 180 * 2 * Math.PI, rr = r + depth * Math.cos(bumps * a); pts.push(`${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`); }
+  return `M${pts.join('L')}Z`;
+}
+const face = (cx, cy, s = 1) => `<g transform="translate(${cx} ${cy}) scale(${s})"><circle cx="-13" cy="5" r="3.6" fill="${BLUSH}" opacity=".85"/><circle cx="13" cy="5" r="3.6" fill="${BLUSH}" opacity=".85"/><g fill="none" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"><path d="M-10 -2 q3.5 -4.5 7 0"/><path d="M3 -2 q3.5 -4.5 7 0"/><path d="M-5 5 q5 6 10 0"/></g></g>`;
+const CLOUD = 'M22 68 C6 68 6 44 24 44 C24 26 52 20 60 38 C78 34 86 54 72 64 C70 68 64 68 62 68 Z';
+const DROP = 'M50 3 C56 18 98 56 98 94 A48 44 0 0 1 2 94 C2 56 44 18 50 3 Z';
+const skyKind = () => data.code <= 1 ? 'sunny' : data.code === 2 ? 'partly' : 'cloudy';
+
+function timeParts() {
+  const p = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: CHI.tz }).formatToParts(new Date());
+  const g = t => (p.find(x => x.type === t) || {}).value || '';
+  return { hm: `${g('hour')}:${g('minute')}`, ap: g('dayPeriod').toUpperCase() };
+}
+const tickMarks = () => Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, big = i % 3 === 0, r1 = big ? 36 : 38.5, r2 = 42; return `<line x1="${(50 + r1 * Math.sin(a)).toFixed(1)}" y1="${(50 - r1 * Math.cos(a)).toFixed(1)}" x2="${(50 + r2 * Math.sin(a)).toFixed(1)}" y2="${(50 - r2 * Math.cos(a)).toFixed(1)}" stroke="${INK}" stroke-width="${big ? 3.4 : 2.2}" stroke-linecap="round"/>`; }).join('');
+
+const UV_NAMES = ['LOW', 'MODERATE', 'HIGH', 'VERY HIGH', 'EXTREME'];
+const AQI_NAMES = ['GOOD', 'MODERATE', 'SENSITIVE', 'UNHEALTHY', 'VERY BAD', 'HAZARDOUS'];
+const UV_COLS = ['#8be28b', '#ffd23f', '#ff9c55', '#ff5d73', '#a77bff'];
+const AQI_COLS = ['#8be28b', '#ffd23f', '#ff9c55', '#ff5d73', '#a77bff', '#9b2d4f'];
+const uvBandOf = v => v <= 2 ? 0 : v <= 5 ? 1 : v <= 7 ? 2 : v <= 10 ? 3 : 4;
+const aqiBandOf = v => v <= 50 ? 0 : v <= 100 ? 1 : v <= 150 ? 2 : v <= 200 ? 3 : v <= 300 ? 4 : 5;
+const TEMP_COLS = ['#6fb7ff', '#9ad8ff', '#8be28b', '#ffd23f', '#ff9c55', '#ff5d73'];
+const tempBandOf = f => f <= 20 ? 0 : f <= 40 ? 1 : f <= 60 ? 2 : f <= 80 ? 3 : f <= 95 ? 4 : 5;
+const uvSpfOf = v => v < 1 ? '' : v <= 2 ? '15' : v <= 5 ? '30' : v <= 7 ? '50' : '50+';
+const bandFill = (cols, i) => isSimple() ? [HI1, YEL, BLU, SG2, SUNB, NAVY][i] : cols[i];
+const bandInk = i => (isSimple() ? i >= 4 : i >= 5) ? ONDEEP : INK;
+
+const STICKERS = [
+  { id: 'city', name: 'City', w: 152, h: 70, art: () => {
+      const label = CHI.name, fs = Math.min(32, Math.round(104 / (label.length * .56)));
+      return `<svg viewBox="0 0 150 70">${ol('rect', 'x="2" y="2" width="146" height="66" rx="24"')}<rect x="2" y="2" width="146" height="66" rx="24" fill="${HI1}" stroke="${INK}" stroke-width="4"/><g transform="translate(27 35) scale(.85)"><path d="M0 -17 C-11 -17 -15 -8 -15 -2 C-15 9 0 21 0 21 C0 21 15 9 15 -2 C15 -8 11 -17 0 -17Z" fill="${INK}"/><circle cx="0" cy="-2" r="5.2" fill="${HI1}"/></g><text x="91" y="36" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-.5" fill="${INK}">${label}</text></svg>`; } },
+  { id: 'time', name: 'Time', w: 116, h: 116, art: () => {
+      const t = timeParts(), fs = t.hm.length >= 5 ? 25 : 32;
+      return `<svg viewBox="0 0 100 100">${ol('circle', 'cx="50" cy="50" r="47"')}<circle cx="50" cy="50" r="47" fill="${PNK}" stroke="${INK}" stroke-width="4"/>${tickMarks()}<text data-time-hm x="50" y="42" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-1" fill="${INK}">${t.hm}</text><text data-time-ap class="lab" x="50" y="69" text-anchor="middle" font-size="12" letter-spacing="1.5" fill="${INK}">${t.ap}</text></svg>`; } },
+  { id: 'temp', name: 'Temperature', w: 80, h: 152, art: () => {
+      const f = data.tempF, b = tempBandOf(f), fill = isSimple() ? BLU : TEMP_COLS[b], ink = INK;   // Simple stays one tone: the column height carries the heat
+      const frac = Math.min(1, Math.max(0, (f + 10) / 120)), yTop = (88 - frac * 70).toFixed(1);            // column height follows the temperature (-10 to 110 F)
+      const n = String(deg(f)), fs = n.length >= 3 ? 24 : 30;
+      const outline = 'M26 20 A14 14 0 0 1 54 20 L54 85.2 A32 32 0 1 1 26 85.2 Z';
+      const ticks = [26, 40, 54, 68, 82].map((y, i) => `<line x1="29" y1="${y}" x2="${i === 2 ? 36 : 33}" y2="${y}" stroke="${INK}" stroke-width="1.6" stroke-linecap="round" opacity=".45"/>`).join('');
+      return `<svg viewBox="0 0 80 152">${edge(outline)}<path d="${outline}" fill="${CLOUDF}" stroke="${INK}" stroke-width="3.6" stroke-linejoin="round"/>${ticks}<rect x="33" y="${yTop}" width="14" height="${(114 - yTop).toFixed(1)}" rx="7" fill="${fill}"/><circle cx="40" cy="114" r="25" fill="${fill}"/><ellipse cx="29" cy="102" rx="6" ry="3" fill="${SHINE}" opacity=".55" transform="rotate(-35 29 102)"/><text x="40" y="115" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-1" fill="${ink}">${n}<tspan font-size="${Math.round(fs * .5)}" dy="${-Math.round(fs * .3)}" letter-spacing="0">°</tspan></text></svg>`; } },
+  { id: 'precip', name: 'Chance of precipitation', w: 110, h: 154, art: () => {
+      const n = Math.round(data.precip), fs = n >= 100 ? 36 : 54;
+      return `<svg viewBox="0 0 100 140">${edge(DROP)}<path d="${DROP}" fill="${BLU}" stroke="${INK}" stroke-width="3.6" stroke-linejoin="round"/><path d="M30 80 C30 66 38 54 46 44" fill="none" stroke="${SHINE}" stroke-width="7" stroke-linecap="round" opacity=".7"/><text x="47" y="100" text-anchor="middle" fill="${INK}" letter-spacing="-2"><tspan font-size="${fs}">${n}</tspan><tspan font-size="22" dx="2" dy="${-Math.round(fs * .38)}" letter-spacing="0">%</tspan></text><path id="pl" d="M 17 97 A 33 33 0 0 0 83 97" fill="none"/><text class="lab" font-size="12" fill="${INK}" text-anchor="middle"><textPath href="#pl" startOffset="50%">${precipLabel(data.code)}</textPath></text></svg>`; } },
+  { id: 'hilo', name: 'High and low temperature', w: 123, h: 123, art: () => {
+      const hi = String(deg(data.highF)), lo = String(deg(data.lowF)), fh = hi.length >= 3 ? 28 : 36, fl = lo.length >= 3 ? 28 : 36;
+      const deg1 = (fs) => `<tspan font-size="${Math.round(fs * .52)}" dy="${-Math.round(fs * .26)}" letter-spacing="0">°</tspan>`;
+      return `<svg viewBox="0 0 123 123"><defs><clipPath id="hc"><rect x="2" y="2" width="119" height="119" rx="16"/></clipPath></defs>${ol('rect', 'x="2" y="2" width="119" height="119" rx="16"')}<g clip-path="url(#hc)"><polygon points="0,0 123,0 0,123" fill="${HI1}"/><polygon points="123,0 123,123 0,123" fill="${HI2}"/><line x1="123" y1="0" x2="0" y2="123" stroke="${SHINE}" stroke-width="6"/></g><rect x="2" y="2" width="119" height="119" rx="16" fill="none" stroke="${INK}" stroke-width="4"/><text x="14" y="50" font-size="${fh}" letter-spacing="-1" fill="${INK}">${hi}${deg1(fh)}</text><text class="lab" x="16" y="65" font-size="11" fill="${INK}" letter-spacing="1.5">HIGH</text><text class="lab" x="108" y="78" font-size="11" fill="${INK}" text-anchor="end" letter-spacing="1.5">LOW</text><text x="108" y="111" font-size="${fl}" text-anchor="end" letter-spacing="-1" fill="${INK}">${lo}${deg1(fl)}</text></svg>`; } },
+  { id: 'moon', name: 'Moon phase', w: 108, h: 108, art: () => `<svg viewBox="0 0 100 100">${ol('circle', 'cx="50" cy="50" r="47"')}<circle cx="50" cy="50" r="47" fill="${NAVY}" stroke="${INK}" stroke-width="4"/><g fill="${YEL}"><circle cx="19" cy="24" r="2.4"/><circle cx="82" cy="28" r="2.8"/><circle cx="77" cy="60" r="2"/><circle cx="23" cy="50" r="2"/></g><g transform="translate(25 9) scale(.5)"><circle cx="50" cy="50" r="50" fill="none" stroke="${DASH}" stroke-width="3" stroke-dasharray="4 5"/><path d="${moonPath(data.moonPhase)}" fill="${CRM}"/></g><path id="ml" d="M 14 62 A 37 37 0 0 0 86 62" fill="none"/><text class="lab" font-size="10" fill="${ONDEEP}" text-anchor="middle"><textPath href="#ml" startOffset="50%">${phaseName(data.moonPhase)}</textPath></text></svg>` },
+  { id: 'suntimes', name: 'Sunrise and sunset', w: 84, h: 114, art: () => { const tfs = Math.max(data.sunrise.length, data.sunset.length) >= 8 ? 13.5 : 14.5, adv = tfs * .6, lsT = (28 / 33 - 1) * adv, lsB = (38 / 33 - 1) * adv - .23 * (tfs / 14.5); return `<svg viewBox="0 0 84 114"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${SG1}"/><stop offset="1" stop-color="${SG2}"/></linearGradient></defs>${ol('rect', 'x="2" y="2" width="80" height="110" rx="40"')}<rect x="2" y="2" width="80" height="110" rx="40" fill="url(#sg)" stroke="${INK}" stroke-width="4"/><path d="M22 57 A20 20 0 0 1 62 57 Z" fill="${YEL}"/><path d="M22 57 A20 20 0 0 0 62 57 Z" fill="${SUNB}"/><circle cx="42" cy="57" r="20" fill="none" stroke="${INK}" stroke-width="3"/><path id="sr" d="M 14 57 A 28 28 0 0 1 70 57" fill="none"/><path id="ss" d="M 4 57 A 38 38 0 0 0 80 57" fill="none"/><text font-size="${tfs}" letter-spacing="${lsT.toFixed(2)}" word-spacing="${(.8 * tfs / 14.5).toFixed(2)}" fill="${INK}" text-anchor="middle"><textPath href="#sr" startOffset="50%">${data.sunrise}</textPath></text><text font-size="${tfs}" letter-spacing="${lsB.toFixed(2)}" word-spacing="${(-.5 * tfs / 14.5).toFixed(2)}" fill="${INK}" text-anchor="middle"><textPath href="#ss" startOffset="50%">${data.sunset}</textPath></text></svg>`; } },
+  { id: 'sky', name: 'Sky conditions', w: 88, h: 116, art: () => {
+      const k = skyKind(), day = !!data.isDay;
+      const label = k === 'sunny' ? (day ? 'SUNNY' : 'CLEAR') : k === 'partly' ? 'PARTLY CLOUDY' : 'CLOUDY';
+      const body = (cx, cy, r, s) => day
+        ? `<path d="${burst(cx, cy, r, 12, r * .14)}" fill="${YEL}" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/>${face(cx, cy, s)}`
+        : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${CRM}" stroke="${INK}" stroke-width="3.4"/>${face(cx, cy, s)}`;
+      const bodyEdge = (cx, cy, r) => day ? edge(burst(cx, cy, r, 12, r * .14)) : ol('circle', `cx="${cx}" cy="${cy}" r="${r}"`);
+      const cloud = t => `<g transform="${t}">${edge(CLOUD)}</g>`;
+      const cloudIn = (t, f) => `<g transform="${t}"><path d="${CLOUD}" fill="${CLOUDF}" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/>${f || ''}</g>`;
+      const icon = k === 'sunny' ? bodyEdge(44, 45, 36) + body(44, 45, 36, 1.1)
+        : k === 'partly' ? bodyEdge(58, 36, 25) + cloud('translate(-2 6) scale(.9)') + body(58, 36, 25, .7) + cloudIn('translate(-2 6) scale(.9)')
+        : cloud('translate(0 4)') + cloudIn('translate(0 4)', face(46, 52, .95));
+      const words = label.length > 8 && label.includes(' ') ? label.split(' ') : [label];
+      const two = words.length === 2, py = two ? 82 : 88, ph = two ? 33 : 27, fs = two ? 11.5 : Math.min(15, Math.floor(68 / (label.length * .7)));
+      const lines = words.map((w, i) => `<text class="lab" x="44" y="${(py + ph / 2 + (two ? (i ? 6 : -6) : 0)).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="${fs}" fill="${INK}">${w}</text>`).join('');
+      return `<svg viewBox="0 0 88 116">${icon}${ol('rect', `x="4" y="${py}" width="80" height="${ph}" rx="14"`, EDGEW ? 9 : 0)}<rect x="4" y="${py}" width="80" height="${ph}" rx="14" fill="${PNK}" stroke="${INK}" stroke-width="3"/>${lines}</svg>`;
+    } },
+  { id: 'uv', name: 'UV index', w: 80, h: 140, art: () => {
+      const day = !!data.isDay, v = Math.round(day ? data.uvNow : data.uvPeak), b = uvBandOf(v), fill = bandFill(UV_COLS, b), ink = bandInk(b), spf = uvSpfOf(v);
+      const body = 'M14 14 L66 14 L71 94 Q71 110 58 112 L22 112 Q9 110 9 94 Z';
+      const ridges = Array.from({ length: 9 }, (_, i) => `<line x1="${19 + i * 5.5}" y1="6.5" x2="${19 + i * 5.5}" y2="13" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>`).join('');
+      return `<svg viewBox="0 0 80 140">${edge(body)}${ol('rect', 'x="14" y="4" width="52" height="12" rx="2"')}${ol('rect', 'x="22" y="112" width="36" height="24" rx="5"')}<path d="${body}" fill="${fill}" stroke="${INK}" stroke-width="3.6" stroke-linejoin="round"/><rect x="14" y="4" width="52" height="12" rx="2" fill="${HI2}" stroke="${INK}" stroke-width="3.2"/>${ridges}<path d="M17 26 C16 50 17 70 19 86" fill="none" stroke="${SHINE}" stroke-width="5" stroke-linecap="round" opacity=".55"/><rect x="29" y="111" width="22" height="9" fill="${CLOUDF}" stroke="${INK}" stroke-width="3"/><rect x="22" y="119" width="36" height="17" rx="5" fill="${CLOUDF}" stroke="${INK}" stroke-width="3.4"/><text class="lab" x="40" y="127.8" text-anchor="middle" dominant-baseline="central" font-size="${spf.length > 2 ? 7.2 : 8.5}" fill="${INK}">${spf ? 'SPF ' + spf : ''}</text><text class="lab" x="40" y="36" text-anchor="middle" font-size="9.5" letter-spacing=".8" fill="${ink}">${day ? 'UV NOW' : 'UV PEAK'}</text><text x="40" y="78" text-anchor="middle" font-size="${v >= 10 ? 38 : 46}" letter-spacing="-1.5" fill="${ink}">${v}</text><text class="lab" x="40" y="97" text-anchor="middle" font-size="${UV_NAMES[b].length > 7 ? 8 : 10}" letter-spacing=".8" fill="${ink}">${UV_NAMES[b]}</text></svg>`; } },
+  { id: 'aqi', name: 'Air quality index', w: 120, h: 128, art: () => {
+      const v = Math.round(data.aqi), b = aqiBandOf(v), fill = bandFill(AQI_COLS, b), ink = bandInk(b), cat = AQI_NAMES[b];
+      const leaf = 'M24 98 C6 58 38 14 106 8 C112 62 84 106 24 98 Z', fs = v >= 100 ? 36 : 44, cfs = cat.length > 9 ? 9 : 10.5;
+      const stemEdge = EDGEW ? `<path d="M24 98 L9 114" fill="none" stroke="${EDGE}" stroke-width="15" stroke-linecap="round"/>` : '';
+      return `<svg viewBox="0 0 120 128">${stemEdge}${edge(leaf)}${ol('rect', 'x="24" y="106" width="90" height="19" rx="9.5"', EDGEW ? 10 : 0)}<path d="M24 98 L9 114" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="${leaf}" fill="${fill}" stroke="${INK}" stroke-width="3.6" stroke-linejoin="round"/><path d="M24 98 Q60 64 98 16 M46 76 L38 57 M46 76 L60 87 M64 56 L54 38 M64 56 L82 66 M83 35 L76 21 M83 35 L98 44" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" opacity=".2"/><text class="lab" x="62" y="40" text-anchor="middle" font-size="11" letter-spacing="2" fill="${ink}">AQI</text><text x="62" y="78" text-anchor="middle" font-size="${fs}" letter-spacing="-1.5" fill="${ink}">${v}</text><rect x="24" y="106" width="90" height="19" rx="9.5" fill="${CLOUDF}" stroke="${INK}" stroke-width="3"/><text class="lab" x="69" y="116" text-anchor="middle" dominant-baseline="central" font-size="${cfs}" letter-spacing="1" fill="${INK}">${cat}</text></svg>`; } }
+];
+const byId = Object.fromEntries(STICKERS.map(s => [s.id, s]));
+
+/* ============ state ============ */
+const KEY = 'lookin-up-stickers-v3';
+const SWATCHES = [['#6b7280', 'Graphite'], ['#4f6df5', 'Blue'], ['#14a39a', 'Teal'], ['#3fa34d', 'Green'], ['#d99a00', 'Amber'], ['#f0644d', 'Coral'], ['#e5589b', 'Rose'], ['#8b5cf6', 'Violet']];
+const state = {
+  placed: { city: { fx: .12, fy: .2, r: -6 }, time: { fx: .78, fy: .3, r: 7 } }, order: ['city', 'time'], page: 0, open: true, unit: 'F',
+  theme: 'notebook', mode: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', color: '#4f6df5', cover: '#0c0c0f', palette: 'candy', gridLock: false, gridOrder: [], city: null, unitSet: false
+};
+try { Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+if (state.city) Object.assign(CHI, { name: state.city.name, lat: state.city.lat, lon: state.city.lon, tz: state.city.tz });
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };unit = state.unit;
+let justPlaced = null, selectedId = null;
+const randTilt = () => { const r = 4 + Math.random() * 8; return Math.random() < .5 ? -r : r; };
+
+const $ = id => document.getElementById(id);
+const app = $('app'), canvas = $('canvas'), slotsEl = $('slots'), dotsEl = $('dots'), dragLayer = $('dragLayer'), panel = $('panel');
+const pageSize = () => matchMedia('(min-width:1100px)').matches ? 3 : matchMedia('(min-width:700px)').matches ? 4 : 3;
+const stickerScale = () => matchMedia('(max-width:699px)').matches ? 0.76 : 1;
+const sz = def => { const k = stickerScale(); return { w: Math.round(def.w * k), h: Math.round(def.h * k) }; };
+const dimsOf = id => { const d = sz(byId[id]), s = (state.placed[id] && state.placed[id].s) || 1; return { w: Math.round(d.w * s), h: Math.round(d.h * s) }; };
+const tf = (x, y, r = 0, s = 1) => `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`;
+const isSimple = () => state.theme === 'simple';
+
+/* ============ theme ============ */
+const VARS = ['--ink', '--bg', '--sheet', '--dot', '--line', '--f1', '--f2', '--f3'];
+function applyTheme() {
+  const root = document.documentElement.style;
+  document.documentElement.dataset.theme = state.theme; document.documentElement.dataset.mode = state.mode;
+  if (isSimple()) {
+    const t = monoPalette(state.color, state.mode);
+    setPalette(t.pal);
+    ['ink', 'bg', 'sheet', 'dot', 'line', 'f1', 'f2', 'f3'].forEach(k => root.setProperty('--' + k, t[k]));
+    root.setProperty('color-scheme', state.mode);
+    root.setProperty('--beam-o', '0');
+  } else {
+    setPalette(stickerPalette(state.palette));
+    VARS.forEach(v => root.removeProperty(v)); root.removeProperty('color-scheme'); root.removeProperty('--beam-o');
+  }
+  panel.querySelectorAll('.simple-only').forEach(el => el.hidden = !isSimple());
+  panel.querySelectorAll('.notebook-only').forEach(el => el.hidden = isSimple());
+  panel.querySelectorAll('[data-theme-btn]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeBtn === state.theme)));
+  panel.querySelectorAll('[data-mode-btn]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeBtn === state.mode)));
+  panel.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color.toLowerCase() === state.color.toLowerCase())));
+  panel.querySelectorAll('#coverSwatches .sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color.toLowerCase() === state.cover.toLowerCase())));
+  panel.querySelectorAll('#palettes .pal').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pal === state.palette)));
+  applyCover();
+}
+function buildSwatches() {
+  const box = $('swatches');
+  box.innerHTML = SWATCHES.map(([c, n]) => `<button type="button" class="sw" data-color="${c}" aria-label="${n}" aria-pressed="false" style="--c:${c}"><i></i></button>`).join('')
+    + `<label class="custom" title="Custom color"><input type="color" id="customColor" value="${state.color}" aria-label="Custom color"><i></i></label>`;
+  box.querySelectorAll('.sw').forEach(b => b.onclick = () => setColor(b.dataset.color));
+  $('customColor').oninput = e => setColor(e.target.value);
+}
+function setColor(c) { state.color = c; save(); applyTheme(); renderAll(); }
+
+/* ---- notebook cover color: the marble keeps its speckle, on the picked color ---- */
+const COVERS = [['#0c0c0f', 'Black'], ['#1e3a8a', 'Navy'], ['#991b1b', 'Red'], ['#166534', 'Green'], ['#5b21b6', 'Purple'], ['#0f766e', 'Teal'], ['#be185d', 'Berry'], ['#57534e', 'Stone']];
+const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const luminance = ([r, g, b]) => [r, g, b].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0);
+function marbleUrl(speckle) {                       // same noise as the stylesheet, with a chosen speckle color
+  const [r, g, b] = speckle;
+  return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.075' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  0 0 0 -34 15.6'/></filter><rect width='420' height='420' filter='url(%23n)'/></svg>")`;
+}
+function applyCover() {
+  const cv = $('canvas').style;
+  if (isSimple()) { cv.backgroundColor = ''; cv.backgroundImage = ''; return; }    // the simple theme paints its own background
+  const base = state.cover || '#0c0c0f';
+  cv.backgroundColor = base;
+  cv.backgroundImage = marbleUrl([1, 1, 1]);   // white speckle on every cover; on a light cover the contrast stays light on light
+}
+function buildPalettes() {
+  $('palettes').innerHTML = PALETTES.map(([id, name]) => {
+    const p = stickerPalette(id);
+    return `<button type="button" class="pal" data-pal="${id}" aria-pressed="false" aria-label="${name} sticker colors"><span class="chips">${[p.YEL, p.BLU, p.PNK, p.HI1, p.HI2].map(c => `<i style="--c:${c}"></i>`).join('')}</span><span class="nm">${name}</span></button>`;
+  }).join('');
+  $('palettes').querySelectorAll('.pal').forEach(b => b.onclick = () => { state.palette = b.dataset.pal; save(); applyTheme(); renderAll(); });
+}
+function setCover(c) { state.cover = c; save(); applyTheme(); }
+function buildCoverSwatches() {
+  const box = $('coverSwatches');
+  box.innerHTML = COVERS.map(([c, n]) => `<button type="button" class="sw" data-color="${c}" aria-label="${n}" aria-pressed="false" style="--c:${c}"><i></i></button>`).join('')
+    + `<label class="custom" title="Custom cover color"><input type="color" id="customCover" value="${state.cover}" aria-label="Custom cover color"><i></i></label>`;
+  box.querySelectorAll('.sw').forEach(b => b.onclick = () => setCover(b.dataset.color));
+  $('customCover').oninput = e => setCover(e.target.value);
+}
+
+/* ============ rendering ============ */
+function stickerEl(def) {
+  const el = document.createElement('div');
+  el.className = 'sticker'; el.dataset.id = def.id; el.tabIndex = 0; el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', `${def.name} sticker. Press Enter to move between the drawer and the canvas.`);
+  const d = sz(def); el.style.width = d.w + 'px'; el.style.height = d.h + 'px';
+  el.innerHTML = def.art();
+  return el;
+}
+function renderCanvas() {
+  canvas.querySelectorAll('.sticker').forEach(n => n.remove());
+  const cr = canvas.getBoundingClientRect();
+  state.order.filter(id => state.placed[id]).forEach((id, z) => {
+    const def = byId[id], p = state.placed[id], el = stickerEl(def), rot = isSimple() ? 0 : (p.r || 0);
+    const d = dimsOf(id), x = p.fx * Math.max(0, cr.width - d.w), y = p.fy * Math.max(0, cr.height - d.h);
+    el.style.width = d.w + 'px'; el.style.height = d.h + 'px';
+    el.style.transform = tf(x, y, rot); el.style.zIndex = 10 + z; el.dataset.r = rot;
+    if (justPlaced === id) { el.classList.add('pop'); justPlaced = null; }
+    if (selectedId === id) el.classList.add('sel');
+    canvas.appendChild(el); syncHandle(el);
+  });
+  if (selectedId && !state.placed[selectedId]) selectedId = null;
+  $('trash').classList.toggle('show', !!selectedId);
+  const anyPlaced = state.order.some(id => state.placed[id]);
+  ['grid', 'shuffle'].forEach(b => $(b).setAttribute('aria-disabled', String(!anyPlaced)));
+}
+const HANDLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg>';
+function syncHandle(el) {
+  const old = el.querySelector('.rz'); if (old) old.remove();
+  if (el.classList.contains('sel') && el.parentElement === canvas) { const h = document.createElement('span'); h.className = 'rz'; h.setAttribute('aria-hidden', 'true'); h.innerHTML = HANDLE; el.appendChild(h); }
+}
+const S_MIN = .5, S_MAX = 2.6;
+function maxScale(id, cr) { const b = sz(byId[id]); return Math.max(S_MIN, Math.min(S_MAX, (cr.width - 28) / b.w, (cr.height - 100) / b.h)); }
+function scaleSticker(id, factor) {
+  const p = state.placed[id]; if (!p) return;
+  const cr = canvas.getBoundingClientRect(), d0 = dimsOf(id), x = p.fx * Math.max(0, cr.width - d0.w), y = p.fy * Math.max(0, cr.height - d0.h);
+  p.s = +Math.min(maxScale(id, cr), Math.max(S_MIN, (p.s || 1) * factor)).toFixed(3);
+  const d1 = dimsOf(id), nx = Math.min(x, Math.max(0, cr.width - d1.w)), ny = Math.min(y, Math.max(0, cr.height - d1.h));
+  p.fx = nx / Math.max(1, cr.width - d1.w); p.fy = ny / Math.max(1, cr.height - d1.h);
+  save(); renderCanvas();
+}
+function setSelected(id) {
+  selectedId = id;
+  canvas.querySelectorAll('.sticker').forEach(n => { n.classList.toggle('sel', n.dataset.id === id); syncHandle(n); });
+  $('trash').classList.toggle('show', !!id);
+}
+function removeFromCanvas(id) {
+  delete state.placed[id]; state.order = state.order.filter(i => i !== id);
+  if (selectedId === id) selectedId = null;
+}
+function bumpTrash() { const t = $('trash'); t.classList.remove('bump'); void t.offsetWidth; t.classList.add('bump'); setTimeout(() => t.classList.remove('bump'), 400); }
+function renderDrawer() {
+  const free = STICKERS.filter(s => !state.placed[s.id]), ps = pageSize(), pages = Math.max(1, Math.ceil(free.length / ps));
+  state.page = Math.min(state.page, pages - 1);
+  slotsEl.innerHTML = '';
+  free.slice(state.page * ps, state.page * ps + ps).forEach(def => { const slot = document.createElement('div'); slot.className = 'slot'; slot.appendChild(stickerEl(def)); slotsEl.appendChild(slot); });
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < pages; i++) { const d = document.createElement('button'); d.className = 'dot'; d.type = 'button'; d.setAttribute('aria-label', `Drawer ${i + 1} of ${pages}`); if (i === state.page) d.setAttribute('aria-current', 'true'); d.onclick = () => { state.page = i; save(); renderDrawer(); }; dotsEl.appendChild(d); }
+  $('prev').disabled = pages < 2; $('next').disabled = pages < 2;
+}
+function renderAll() {
+  renderCanvas(); renderDrawer();
+  document.querySelectorAll('.units button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.unit === unit)));
+  app.dataset.open = String(state.open); $('tab').setAttribute('aria-expanded', String(state.open));
+}
+
+/* ============ drag and drop ============ */
+let drag = null;
+addEventListener('pointerdown', e => {
+  const el = e.target.closest('.sticker');
+  if (!el || (e.button && e.button > 0)) return;
+  try { el.setPointerCapture(e.pointerId); } catch (err) {}
+  const r = el.getBoundingClientRect(), fromCanvas = el.parentElement === canvas;
+  const rot = fromCanvas ? Number(el.dataset.r || 0) : 0;
+  const d = dimsOf(el.dataset.id);
+  drag = { el, id: el.dataset.id, fromCanvas, rot, dx: e.clientX - (r.left + r.width / 2) + d.w / 2, dy: e.clientY - (r.top + r.height / 2) + d.h / 2, w: d.w, h: d.h };
+  setSelected(fromCanvas ? drag.id : null);
+  if (state.gridLock) { const ids = lockedIds(); drag.cells = computeGrid(fromCanvas ? ids : ids.concat(drag.id)).cells; }
+  if (fromCanvas) { state.order = state.order.filter(i => i !== drag.id).concat(drag.id); }
+  else { dragLayer.appendChild(el); el.style.left = '0px'; el.style.top = '0px'; el.style.transform = tf(r.left, r.top, 0, 1.06); }
+  el.style.zIndex = 999; el.classList.add('drag');
+  e.preventDefault();
+});
+addEventListener('pointermove', e => {
+  if (!drag) return;
+  const x = e.clientX - drag.dx, y = e.clientY - drag.dy;
+  if (drag.fromCanvas) { const cr = canvas.getBoundingClientRect(); drag.el.style.transform = tf(x - cr.left, y - cr.top, drag.rot, 1.08); }
+  else { drag.el.style.transform = tf(x, y, 0, 1.08); }
+  const doomed = drag.fromCanvas && inside($('trash').getBoundingClientRect(), e);
+  $('trash').classList.toggle('hot', doomed);
+  drag.el.classList.toggle('doomed', doomed);
+  if (state.gridLock && drag.cells && !doomed) { const cr = canvas.getBoundingClientRect(); showCellHint(nearestCell(drag.cells, x - cr.left + drag.w / 2, y - cr.top + drag.h / 2)); } else hideCellHint();
+});
+const inside = (r, e) => e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+function endDrag(e, cancel) {
+  if (!drag) return;
+  const cr = canvas.getBoundingClientRect(), over = e.clientX >= cr.left && e.clientX <= cr.right && e.clientY >= cr.top && e.clientY <= cr.bottom;
+  const overTrash = drag.fromCanvas && inside($('trash').getBoundingClientRect(), e);
+  $('trash').classList.remove('hot');
+  if (!cancel) {
+    if (overTrash) { removeFromCanvas(drag.id); bumpTrash(); }
+    else if (over) {
+      const x = Math.min(Math.max(e.clientX - drag.dx - cr.left, 0), cr.width - drag.w), y = Math.min(Math.max(e.clientY - drag.dy - cr.top, 0), cr.height - drag.h);
+      const prev = state.placed[drag.id];
+      state.placed[drag.id] = { fx: x / Math.max(1, cr.width - drag.w), fy: y / Math.max(1, cr.height - drag.h), r: prev ? prev.r : randTilt(), s: prev ? prev.s : undefined };
+      state.order = state.order.filter(i => i !== drag.id).concat(drag.id);
+      justPlaced = drag.id;
+      if (state.gridLock) lockDrop(drag, x, y);
+    } else { delete state.placed[drag.id]; state.order = state.order.filter(i => i !== drag.id); }
+  }
+  drag.el.remove();                                   // dragged element is rebuilt by the renders below
+  dragLayer.querySelectorAll('.sticker').forEach(n => n.remove());
+  hideCellHint();
+  drag = null; save(); renderCanvas(); renderDrawer();
+  if (state.gridLock) relayoutLocked();
+}
+addEventListener('pointerup', e => endDrag(e, false));
+addEventListener('pointercancel', e => endDrag(e, true));
+
+/* resize: drag the corner handle of the selected sticker */
+let rz = null;
+addEventListener('pointerdown', e => {
+  const h = e.target.closest && e.target.closest('.rz'); if (!h) return;
+  const el = h.parentElement, id = el.dataset.id, p = state.placed[id]; if (!p) return;
+  e.preventDefault(); e.stopPropagation(); try { h.setPointerCapture(e.pointerId); } catch (err) {}
+  const cr = canvas.getBoundingClientRect(), d0 = dimsOf(id), rot = (isSimple() ? 0 : (p.r || 0)) * Math.PI / 180;
+  rz = { el, id, base: sz(byId[id]), s: p.s || 1, s0: p.s || 1, w0: d0.w, h0: d0.h, sx: e.clientX, sy: e.clientY, cos: Math.cos(rot), sin: Math.sin(rot),
+         x: p.fx * Math.max(0, cr.width - d0.w), y: p.fy * Math.max(0, cr.height - d0.h), cw: cr.width, ch: cr.height, max: maxScale(id, cr) };
+  el.classList.add('resizing');
+}, true);
+addEventListener('pointermove', e => {
+  if (!rz) return;
+  const dx = e.clientX - rz.sx, dy = e.clientY - rz.sy, lx = dx * rz.cos + dy * rz.sin, ly = -dx * rz.sin + dy * rz.cos;
+  rz.s = Math.min(rz.max, Math.max(S_MIN, rz.s0 * (1 + (lx + ly) / (rz.w0 + rz.h0))));
+  rz.el.style.width = Math.round(rz.base.w * rz.s) + 'px'; rz.el.style.height = Math.round(rz.base.h * rz.s) + 'px';
+});
+function endResize() {
+  if (!rz) return;
+  const p = state.placed[rz.id];
+  if (p) {
+    const w = Math.round(rz.base.w * rz.s), h = Math.round(rz.base.h * rz.s), x = Math.min(rz.x, Math.max(0, rz.cw - w)), y = Math.min(rz.y, Math.max(0, rz.ch - h));
+    p.s = +rz.s.toFixed(3); p.fx = x / Math.max(1, rz.cw - w); p.fy = y / Math.max(1, rz.ch - h);
+  }
+  rz = null; save(); renderCanvas();
+  if (state.gridLock) relayoutLocked();
+}
+addEventListener('pointerup', endResize); addEventListener('pointercancel', endResize);
+
+/* keyboard: Enter/Space moves a sticker between drawer and canvas; arrows nudge placed stickers */
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !panel.hidden) { closePanel(); $('gear').focus(); return; }
+  const el = e.target.closest && e.target.closest('.sticker');
+  if (el) {
+    const id = el.dataset.id, onCanvas = el.parentElement === canvas;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (onCanvas) { delete state.placed[id]; state.order = state.order.filter(i => i !== id); }
+      else { state.placed[id] = { fx: .3 + Math.random() * .4, fy: .45 + Math.random() * .3, r: randTilt() }; state.order.push(id); justPlaced = id; }
+      save(); renderCanvas(); renderDrawer(); afterChange();
+      const next = canvas.querySelector(`.sticker[data-id="${id}"]`) || slotsEl.querySelector('.sticker'); if (next) next.focus();
+      return;
+    }
+    if (onCanvas && ['+', '=', '-', '_'].includes(e.key)) {
+      e.preventDefault(); scaleSticker(id, e.key === '+' || e.key === '=' ? 1.12 : 1 / 1.12);
+      const n = canvas.querySelector(`.sticker[data-id="${id}"]`); if (n) n.focus(); return;
+    }
+    if (onCanvas && (e.key === 'Delete' || e.key === 'Backspace')) {
+      e.preventDefault(); removeFromCanvas(id); bumpTrash(); save(); renderCanvas(); renderDrawer(); afterChange(); $('trash').focus(); return;
+    }
+    if (onCanvas && e.key.startsWith('Arrow')) {
+      e.preventDefault();
+      if (state.gridLock) { moveInGrid(id, e.key); return; }
+      const p = state.placed[id], step = .03;
+      p.fx = Math.min(1, Math.max(0, p.fx + (e.key === 'ArrowRight' ? step : e.key === 'ArrowLeft' ? -step : 0)));
+      p.fy = Math.min(1, Math.max(0, p.fy + (e.key === 'ArrowDown' ? step : e.key === 'ArrowUp' ? -step : 0)));
+      save(); renderCanvas(); const n = canvas.querySelector(`.sticker[data-id="${id}"]`); if (n) n.focus();
+      return;
+    }
+  }
+});
+
+/* ============ controls ============ */
+function openPanel() { panel.hidden = false; $('gear').setAttribute('aria-expanded', 'true'); const f = panel.querySelector('button:not([hidden])'); if (f) f.focus(); showCurrentCity(); }
+function closePanel() { panel.hidden = true; $('gear').setAttribute('aria-expanded', 'false'); }
+$('gear').onclick = () => panel.hidden ? openPanel() : closePanel();
+addEventListener('pointerdown', e => { if (!panel.hidden && !e.target.closest('#panel') && !e.target.closest('#gear')) closePanel(); }, true);
+panel.querySelectorAll('[data-theme-btn]').forEach(b => b.onclick = () => { state.theme = b.dataset.themeBtn; save(); applyTheme(); renderAll(); });
+panel.querySelectorAll('[data-mode-btn]').forEach(b => b.onclick = () => { state.mode = b.dataset.modeBtn; save(); applyTheme(); renderAll(); });
+
+/* ---- city picker (Open-Meteo geocoding, keyless) ---- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cityInput = $('cityInput'), cityList = $('cityList'), cityMsg = $('cityMsg');
+let cityResults = [], cityActive = -1, cityTimer = null, citySeq = 0;
+const placeLine = c => [c.admin1, c.country].filter(Boolean).join(', ');
+const showCurrentCity = () => { const c = state.city || { name: CHI.name, admin1: 'Illinois', country: 'United States' }; cityMsg.textContent = [c.name, placeLine(c)].filter(Boolean).join(', '); };
+function renderCityList() {
+  cityList.innerHTML = cityResults.map((c, i) => `<li role="option" id="city-opt-${i}" data-i="${i}" aria-selected="${i === cityActive}">${esc(c.name)}<small>${esc(placeLine(c))}</small></li>`).join('');
+  cityList.hidden = !cityResults.length;
+  cityInput.setAttribute('aria-expanded', String(!!cityResults.length));
+  if (cityActive >= 0) cityInput.setAttribute('aria-activedescendant', `city-opt-${cityActive}`); else cityInput.removeAttribute('aria-activedescendant');
+  const act = cityList.querySelector('[aria-selected="true"]'); if (act && act.scrollIntoView) act.scrollIntoView({ block: 'nearest' });
+}
+async function searchCities(q) {
+  const seq = ++citySeq;
+  try {
+    const r = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`)).json();
+    if (seq !== citySeq) return;
+    cityResults = (r.results || []).filter(c => c.timezone);
+    cityActive = cityResults.length ? 0 : -1; renderCityList();
+    cityMsg.textContent = cityResults.length ? '' : 'No results';
+  } catch (e) { if (seq === citySeq) { cityResults = []; cityActive = -1; renderCityList(); cityMsg.textContent = 'Search unavailable'; } }
+}
+function pickCity(c) {
+  if (!c) return;
+  citySeq++; clearTimeout(cityTimer);
+  state.city = { name: c.name, admin1: c.admin1 || '', country: c.country || '', cc: c.country_code || '', lat: c.latitude, lon: c.longitude, tz: c.timezone };
+  Object.assign(CHI, { name: c.name, lat: c.latitude, lon: c.longitude, tz: c.timezone });
+  if (!state.unitSet) unit = state.unit = c.country_code === 'US' ? 'F' : 'C';          // follow the country until the user picks a unit
+  save(); cityResults = []; cityActive = -1; renderCityList(); cityInput.value = '';
+  cityMsg.textContent = 'Updating…'; renderAll();
+  loadData().then(() => { renderAll(); showCurrentCity(); });
+}
+cityInput.addEventListener('input', () => {
+  clearTimeout(cityTimer); const q = cityInput.value.trim();
+  if (q.length < 2) { citySeq++; cityResults = []; cityActive = -1; renderCityList(); showCurrentCity(); return; }
+  cityTimer = setTimeout(() => searchCities(q), 250);
+});
+cityInput.addEventListener('keydown', e => {
+  const n = cityResults.length;
+  if (e.key === 'ArrowDown' && n) { e.preventDefault(); cityActive = (cityActive + 1) % n; renderCityList(); }
+  else if (e.key === 'ArrowUp' && n) { e.preventDefault(); cityActive = (cityActive - 1 + n) % n; renderCityList(); }
+  else if (e.key === 'Enter' && n) { e.preventDefault(); pickCity(cityResults[Math.max(0, cityActive)]); }
+  else if (e.key === 'Escape' && n) { e.stopPropagation(); cityResults = []; cityActive = -1; renderCityList(); showCurrentCity(); }
+});
+cityList.addEventListener('pointerdown', e => { const li = e.target.closest('li'); if (li) { e.preventDefault(); pickCity(cityResults[+li.dataset.i]); } });
+showCurrentCity();
+
+/* ---- arrange: grid and random ---- */
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const placedIds = () => STICKERS.map(s => s.id).filter(id => state.placed[id]);
+function canvasMetrics() {
+  const cr = canvas.getBoundingClientRect();
+  const spine = isSimple() ? 0 : (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spine-w')) || 0);
+  return { cr, left: spine + 14, right: 14, top: innerWidth >= 700 ? 124 : 88, bottom: 14 };
+}
+function applyLayout(pos, animate = true) {                       // pos: id -> { x, y, r } in canvas px
+  const cr = canvas.getBoundingClientRect(), old = {};
+  canvas.querySelectorAll('.sticker').forEach(el => { old[el.dataset.id] = { t: el.style.transform, w: el.offsetWidth, h: el.offsetHeight }; });
+  for (const id of Object.keys(pos)) {
+    const d = dimsOf(id), p = pos[id];
+    state.placed[id] = { s: state.placed[id] && state.placed[id].s, fx: Math.min(1, Math.max(0, p.x / Math.max(1, cr.width - d.w))), fy: Math.min(1, Math.max(0, p.y / Math.max(1, cr.height - d.h))), r: p.r };
+  }
+  save(); renderCanvas();
+  if (animate && !reduceMotion()) canvas.querySelectorAll('.sticker').forEach(el => {
+    const from = old[el.dataset.id]; if (!from) return;
+    const to = { t: el.style.transform, w: el.offsetWidth, h: el.offsetHeight };
+    if (from.t !== to.t || from.w !== to.w || from.h !== to.h) el.animate([{ transform: from.t, width: from.w + 'px', height: from.h + 'px' }, { transform: to.t, width: to.w + 'px', height: to.h + 'px' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  });
+}
+function computeGrid(ids) {                       // positions and cell rects for ids in order
+  const { cr, left, right, top, bottom } = canvasMetrics(), usableW = cr.width - left - right, usableH = cr.height - top - bottom;
+  const dims = ids.map(id => dimsOf(id)), cw = Math.max(...dims.map(d => d.w)), ch = Math.max(...dims.map(d => d.h));
+  let gap = 14, cols = 1, rows = 1, gridW = 0, gridH = 0;
+  for (const g of [14, 8, 4]) {
+    gap = g; cols = Math.max(1, Math.min(ids.length, Math.floor((usableW + gap) / (cw + gap)))); rows = Math.ceil(ids.length / cols);
+    gridW = cols * cw + (cols - 1) * gap; gridH = rows * ch + (rows - 1) * gap;
+    if (gridH <= usableH) break;
+  }
+  const x0 = left + Math.max(0, (usableW - gridW) / 2), y0 = top + Math.max(0, Math.min((usableH - gridH) / 2, 36)), pos = {}, cells = [];
+  ids.forEach((id, i) => {
+    const c = i % cols, r = Math.floor(i / cols), d = dims[i], cx = x0 + c * (cw + gap), cy = y0 + r * (ch + gap);
+    cells.push({ x: cx, y: cy, w: cw, h: ch });
+    pos[id] = { x: cx + (cw - d.w) / 2, y: cy + (ch - d.h) / 2, r: 0 };
+  });
+  return { pos, cells, cols };
+}
+function arrangeGrid() {
+  const ids = placedIds(); if (!ids.length) return;
+  applyLayout(computeGrid(ids).pos);
+}
+function randomizeSizes(ids) {                    // each placed sticker gets a random scale (kept inside the canvas)
+  const cr = canvas.getBoundingClientRect();
+  ids.forEach(id => { const hi = Math.min(1.7, maxScale(id, cr)), lo = Math.min(.65, hi); state.placed[id].s = +(lo + Math.random() * (hi - lo)).toFixed(3); });
+}
+function scatterRandom(withSizes = false) {
+  const ids = placedIds(); if (!ids.length) return;
+  if (withSizes) randomizeSizes(ids);
+  if (state.gridLock) { shuffleLocked(); return; }
+  const { cr, left, right, top, bottom } = canvasMetrics(), pos = {}, rects = [];
+  const area = id => { const d = dimsOf(id); return d.w * d.h; };
+  ids.slice().sort((a, b) => area(b) - area(a)).forEach(id => {                  // large stickers first
+    let d = dimsOf(id), spot = null, fits = false;
+    for (let round = 0; round < (withSizes ? 8 : 1) && !fits; round++) {
+      if (round > 0) { const p = state.placed[id]; p.s = Math.max(S_MIN, +((p.s || 1) * .88).toFixed(3)); d = dimsOf(id); }   // no free spot: shrink a little and try again
+      const maxX = Math.max(left, cr.width - right - d.w), maxY = Math.max(top, cr.height - bottom - d.h);
+      for (let k = 0; k < 80; k++) {
+        spot = { x: left + Math.random() * (maxX - left), y: top + Math.random() * (maxY - top) };
+        if (!rects.some(q => spot.x < q.x + q.w + 10 && spot.x + d.w + 10 > q.x && spot.y < q.y + q.h + 10 && spot.y + d.h + 10 > q.y)) { fits = true; break; }
+      }
+    }
+    rects.push({ x: spot.x, y: spot.y, w: d.w, h: d.h }); pos[id] = { x: spot.x, y: spot.y, r: randTilt() };
+  });
+  applyLayout(pos);
+}
+/* ---- grid lock: stickers stay in a grid and trade places ---- */
+const afterChange = () => { if (state.gridLock) relayoutLocked(); };
+function lockedIds() {                            // placed stickers in grid order (new ones join at the end)
+  const placed = new Set(placedIds()), ord = (state.gridOrder || []).filter(id => placed.has(id));
+  placedIds().forEach(id => { if (!ord.includes(id)) ord.push(id); });
+  state.gridOrder = ord; return ord;
+}
+function relayoutLocked(animate = true) { const ids = lockedIds(); if (!ids.length) return; applyLayout(computeGrid(ids).pos, animate); }
+function nearestCell(cells, cx, cy) {
+  let best = 0, bd = Infinity;
+  cells.forEach((c, i) => { const d = Math.hypot(c.x + c.w / 2 - cx, c.y + c.h / 2 - cy); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+function lockDrop(dg, x, y) {                     // dropped top-left (canvas px): swap with the occupant, or insert a new sticker
+  let ord = lockedIds();
+  const j = dg.cells ? nearestCell(dg.cells, x + dg.w / 2, y + dg.h / 2) : ord.length;
+  if (dg.fromCanvas) { const i = ord.indexOf(dg.id), k = Math.min(j, ord.length - 1); if (i >= 0 && k !== i) [ord[i], ord[k]] = [ord[k], ord[i]]; }
+  else { ord = ord.filter(i => i !== dg.id); ord.splice(Math.min(j, ord.length), 0, dg.id); }
+  state.gridOrder = ord;
+}
+function moveInGrid(id, key) {                    // arrow keys swap a sticker with its neighbor
+  const ord = lockedIds(), i = ord.indexOf(id), cols = computeGrid(ord).cols;
+  const k = i + (key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : key === 'ArrowUp' ? -cols : cols);
+  if (i < 0 || k < 0 || k >= ord.length) return;
+  [ord[i], ord[k]] = [ord[k], ord[i]]; state.gridOrder = ord; relayoutLocked();
+  const n = canvas.querySelector(`.sticker[data-id="${id}"]`); if (n) n.focus();
+}
+function shuffleLocked() {
+  const ord = lockedIds().slice();
+  for (let i = ord.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ord[i], ord[j]] = [ord[j], ord[i]]; }
+  state.gridOrder = ord; relayoutLocked();
+}
+let cellHint = null;
+function showCellHint(idx) {
+  const c = drag && drag.cells && drag.cells[Math.min(idx, drag.cells.length - 1)]; if (!c) return hideCellHint();
+  if (!cellHint) { cellHint = document.createElement('div'); cellHint.className = 'cell-hint'; canvas.appendChild(cellHint); }
+  Object.assign(cellHint.style, { left: c.x + 'px', top: c.y + 'px', width: c.w + 'px', height: c.h + 'px' });
+}
+function hideCellHint() { if (cellHint) { cellHint.remove(); cellHint = null; } }
+function updateGridButton() {
+  const b = $('grid'); b.setAttribute('aria-pressed', String(!!state.gridLock));
+  b.setAttribute('aria-label', state.gridLock ? 'Grid locked. Double-tap to unlock' : 'Arrange stickers in a grid. Double-tap to lock the grid');
+}
+function setGridLock(on) { state.gridLock = on; if (on) state.gridOrder = placedIds(); save(); updateGridButton(); if (on) relayoutLocked(); }
+/* double-tap detection: two quick clicks on the same button. Works for touch, mouse, and Enter/Space,
+   so it does not depend on the browser's dblclick event (which iOS Safari does not send for taps). */
+const DOUBLE_MS = 320, lastTap = {};
+function isDoubleTap(id) {
+  const now = performance.now(), dbl = now - (lastTap[id] ?? -1e9) < DOUBLE_MS;
+  lastTap[id] = dbl ? -1e9 : now; return dbl;
+}
+$('grid').onclick = e => {
+  if ($('grid').getAttribute('aria-disabled') === 'true') return;
+  if (e.shiftKey || isDoubleTap('grid')) { setGridLock(!state.gridLock); return; }   // double-tap (or Shift+click): lock / unlock the grid
+  if (state.gridLock) relayoutLocked(); else arrangeGrid();
+};
+$('shuffle').onclick = () => {
+  if ($('shuffle').getAttribute('aria-disabled') === 'true') return;
+  scatterRandom(isDoubleTap('shuffle'));                                             // double-tap: random size and placement
+};
+
+$('trash').onclick = () => {
+  if (!selectedId) return;
+  removeFromCanvas(selectedId); bumpTrash(); save(); renderCanvas(); renderDrawer(); afterChange();
+};
+addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('.sticker'); if (el && el.parentElement === canvas) setSelected(el.dataset.id); });
+addEventListener('pointerdown', e => { if (!e.target.closest('.sticker') && !e.target.closest('#trash')) setSelected(null); }, true);
+
+$('tab').onclick = () => { state.open = !state.open; save(); app.dataset.open = String(state.open); $('tab').setAttribute('aria-expanded', String(state.open)); setTimeout(() => { renderCanvas(); if (state.gridLock) relayoutLocked(false); }, 300); };
+$('prev').onclick = () => { const pages = $('dots').children.length; state.page = (state.page - 1 + pages) % pages; save(); renderDrawer(); };
+$('next').onclick = () => { const pages = $('dots').children.length; state.page = (state.page + 1) % pages; save(); renderDrawer(); };
+document.querySelectorAll('.units button').forEach(b => b.onclick = () => { unit = state.unit = b.dataset.unit; state.unitSet = true; save(); renderAll(); });
+addEventListener('resize', () => { renderCanvas(); renderDrawer(); if (state.gridLock) relayoutLocked(false); });
+
+/* hide the top bar after a quiet spell; any movement, touch, or key brings it back */
+const IDLE_MS = 4000, topBar = document.querySelector('.top-actions');
+let idleTimer = null;
+function wakeBar() { app.classList.remove('idle'); clearTimeout(idleTimer); idleTimer = setTimeout(maybeHideBar, IDLE_MS); }
+function maybeHideBar() {
+  const busy = !panel.hidden || selectedId || drag || rz || topBar.matches(':hover') || topBar.contains(document.activeElement);
+  if (busy) { idleTimer = setTimeout(maybeHideBar, 1000); return; }
+  app.classList.add('idle');
+}
+['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(t => addEventListener(t, wakeBar, { passive: true, capture: true }));
+addEventListener('focusin', wakeBar);
+wakeBar();
+
+// keep the time sticker current without re-rendering (and interrupting a drag)
+setInterval(() => { const t = timeParts(); document.querySelectorAll('[data-time-hm]').forEach(n => n.textContent = t.hm); document.querySelectorAll('[data-time-ap]').forEach(n => n.textContent = t.ap); }, 15000);
+
+buildSwatches(); buildCoverSwatches(); buildPalettes(); applyTheme(); renderAll(); updateGridButton(); if (state.gridLock) relayoutLocked(false);
+loadData().then(renderAll);
+</script>
+</body>
+</html>
