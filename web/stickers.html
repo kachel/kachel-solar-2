@@ -59,6 +59,23 @@
   .gear:hover { background: #f1ecff; }
   .gear svg { width: 26px; height: 26px; }
   .gear { transition: background-color .15s, transform .15s, opacity .15s; }
+
+  /* grid button: locked state swaps the grid icon for a lock; a lock FAB hangs below it on hover (mouse only) */
+  .grid-wrap { position: relative; display: flex; }
+  #grid { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+  #grid .ic-lock { display: none; }
+  #grid[aria-pressed="true"] .ic-grid { display: none; }
+  #grid[aria-pressed="true"] .ic-lock { display: block; }
+  .fab { position: absolute; top: calc(100% + 10px); left: 50%; width: 44px; height: 44px; z-index: 2;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, -6px) scale(.9);
+    transition: opacity .15s, transform .15s, visibility 0s .15s, background-color .15s; }
+  .fab svg { width: 22px; height: 22px; }
+  .fab::before { content: ''; position: absolute; inset: -14px -8px -8px; }   /* keeps hover alive across the gap and enlarges the hit area */
+  #grid[aria-pressed="true"] ~ .fab, #grid[aria-disabled="true"] ~ .fab { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .grid-wrap:hover .fab, .grid-wrap:focus-within .fab { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0) scale(1);
+      transition: opacity .15s, transform .15s, visibility 0s, background-color .15s; }
+  }
   .trash:not(.show) { opacity: 0; transform: scale(.6); visibility: hidden; pointer-events: none; transition: opacity .15s, transform .15s, visibility 0s .15s; }
   .trash.hot { background: #ff4d6a; color: #fff; transform: scale(1.32); box-shadow: 0 0 0 5px #fff, 0 0 0 9px #ff4d6a; }
   .trash.hot svg { animation: bump .5s ease infinite; }
@@ -241,7 +258,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .drawer, .drawer-inner, .tab svg, .sticker, .tab, .units button, .seg button, .sw i { transition: none; }
+    .drawer, .drawer-inner, .tab svg, .sticker, .tab, .units button, .seg button, .sw i, .fab { transition: none; }
     .sticker.pop svg, .trash.bump svg, .trash.hot svg { animation: none; }
   }
 </style>
@@ -257,8 +274,15 @@
       <button class="gear trash" id="trash" type="button" aria-label="Remove selected sticker">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
       </button>
-      <button class="gear tool" id="grid" type="button" aria-label="Arrange stickers in a grid">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>      </button>
+      <div class="grid-wrap">
+        <button class="gear tool" id="grid" type="button" aria-label="Arrange stickers in a grid. Click again to shuffle the grid. Press and hold on touch screens to lock it">
+          <svg class="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          <svg class="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+        <button class="gear fab" id="gridFab" type="button" aria-label="Lock the grid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+      </div>
       <button class="gear tool" id="shuffle" type="button" aria-label="Scatter stickers randomly. Double-tap to also randomize their sizes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h.01"/><path d="M16 8h.01"/><path d="M12 12h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>      </button>
       <div class="units" role="group" aria-label="Temperature unit">
@@ -648,6 +672,7 @@ let drag = null;
 addEventListener('pointerdown', e => {
   const el = e.target.closest('.sticker');
   if (!el || (e.button && e.button > 0)) return;
+  gridShown = null;                                  // a manual move means the last grid order no longer matches the canvas
   try { el.setPointerCapture(e.pointerId); } catch (err) {}
   const r = el.getBoundingClientRect(), fromCanvas = el.parentElement === canvas;
   const rot = fromCanvas ? Number(el.dataset.r || 0) : 0;
@@ -853,9 +878,24 @@ function computeGrid(ids) {                       // positions and cell rects fo
   });
   return { pos, cells, cols };
 }
+/* gridShown remembers the order the grid was last drawn in, so locking keeps what's on screen */
+let gridShown = null;
+const sameIds = (a, b) => a.length === b.length && a.every(id => b.includes(id));
 function arrangeGrid() {
   const ids = placedIds(); if (!ids.length) return;
+  gridShown = ids.slice();
   applyLayout(computeGrid(ids).pos);
+}
+function shuffleGrid() {                          // new random order, always different from the one on screen
+  const ids = placedIds(); if (ids.length < 2) { arrangeGrid(); return; }
+  const prev = gridShown && sameIds(gridShown, ids) ? gridShown : ids;
+  let ord = ids.slice();
+  for (let t = 0; t < 8; t++) {
+    for (let i = ord.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ord[i], ord[j]] = [ord[j], ord[i]]; }
+    if (ord.some((id, i) => id !== prev[i])) break;
+  }
+  gridShown = ord;
+  applyLayout(computeGrid(ord).pos);
 }
 function randomizeSizes(ids) {                    // each placed sticker gets a random scale (kept inside the canvas)
   const cr = canvas.getBoundingClientRect();
@@ -863,6 +903,7 @@ function randomizeSizes(ids) {                    // each placed sticker gets a 
 }
 function scatterRandom(withSizes = false) {
   const ids = placedIds(); if (!ids.length) return;
+  gridShown = null;
   if (withSizes) randomizeSizes(ids);
   if (state.gridLock) { shuffleLocked(); return; }
   const { cr, left, right, top, bottom } = canvasMetrics(), pos = {}, rects = [];
@@ -922,9 +963,14 @@ function showCellHint(idx) {
 function hideCellHint() { if (cellHint) { cellHint.remove(); cellHint = null; } }
 function updateGridButton() {
   const b = $('grid'); b.setAttribute('aria-pressed', String(!!state.gridLock));
-  b.setAttribute('aria-label', state.gridLock ? 'Grid locked. Double-tap to unlock' : 'Arrange stickers in a grid. Double-tap to lock the grid');
+  b.setAttribute('aria-label', state.gridLock ? 'Grid locked. Click to unlock' : 'Arrange stickers in a grid. Click again to shuffle the grid. Press and hold on touch screens to lock it');
 }
-function setGridLock(on) { state.gridLock = on; if (on) state.gridOrder = placedIds(); save(); updateGridButton(); if (on) relayoutLocked(); }
+function setGridLock(on) {
+  state.gridLock = on;
+  if (on) { const ids = placedIds(); state.gridOrder = gridShown && sameIds(gridShown, ids) ? gridShown.slice() : ids; }   // lock the order on screen
+  else gridLastClick = -1e9;                                                                                             // next click forms the grid again
+  save(); updateGridButton(); if (on) relayoutLocked();
+}
 /* double-tap detection: two quick clicks on the same button. Works for touch, mouse, and Enter/Space,
    so it does not depend on the browser's dblclick event (which iOS Safari does not send for taps). */
 const DOUBLE_MS = 320, lastTap = {};
@@ -932,11 +978,35 @@ function isDoubleTap(id) {
   const now = performance.now(), dbl = now - (lastTap[id] ?? -1e9) < DOUBLE_MS;
   lastTap[id] = dbl ? -1e9 : now; return dbl;
 }
+/* grid button:
+   one click/tap          -> the grid forms
+   clicks/taps in a row   -> the grid shuffles (a pause of GRID_STREAK_MS starts over with "form")
+   desktop hover          -> lock FAB below the button (#gridFab) locks the grid
+   touch long press       -> locks the grid
+   locked                 -> the button shows a lock; click/tap unlocks */
+const GRID_STREAK_MS = 2500, LONG_PRESS_MS = 500;
+let gridLastClick = -1e9, gridPressTimer = null, gridSwallowClick = false;
+const gridDisabled = () => $('grid').getAttribute('aria-disabled') === 'true';
 $('grid').onclick = e => {
-  if ($('grid').getAttribute('aria-disabled') === 'true') return;
-  if (e.shiftKey || isDoubleTap('grid')) { setGridLock(!state.gridLock); return; }   // double-tap (or Shift+click): lock / unlock the grid
-  if (state.gridLock) relayoutLocked(); else arrangeGrid();
+  if (gridDisabled()) return;
+  if (gridSwallowClick) { gridSwallowClick = false; return; }                         // the release that ended a long press
+  if (e.shiftKey) { setGridLock(!state.gridLock); return; }                           // keyboard shortcut: Shift+Enter / Shift+click
+  if (state.gridLock) { setGridLock(false); return; }                                 // locked: click/tap unlocks
+  const now = performance.now(), repeat = now - gridLastClick < GRID_STREAK_MS;
+  gridLastClick = now;
+  if (repeat) shuffleGrid(); else arrangeGrid();
 };
+$('gridFab').onclick = () => { if (gridDisabled()) return; setGridLock(true); $('grid').focus(); };
+$('grid').addEventListener('pointerdown', e => {                                     // long press (touch/pen only) locks
+  if (e.pointerType === 'mouse' || gridDisabled() || state.gridLock) return;
+  clearTimeout(gridPressTimer);
+  gridPressTimer = setTimeout(() => { gridPressTimer = null; gridSwallowClick = true; setGridLock(true); if (navigator.vibrate) navigator.vibrate(15); }, LONG_PRESS_MS);
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(t => $('grid').addEventListener(t, () => {
+  clearTimeout(gridPressTimer); gridPressTimer = null;
+  if (gridSwallowClick) setTimeout(() => { gridSwallowClick = false; }, 400);       // never let a stray flag eat a later real click
+}));
+$('grid').addEventListener('contextmenu', e => e.preventDefault());
 $('shuffle').onclick = () => {
   if ($('shuffle').getAttribute('aria-disabled') === 'true') return;
   scatterRandom(isDoubleTap('shuffle'));                                             // double-tap: random size and placement
