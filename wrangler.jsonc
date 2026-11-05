@@ -1,0 +1,9 @@
+{
+  // Cloudflare deploy config: publish only the web/ folder as static files.
+  // drafts/, the Go server, docs, etc. are not uploaded.
+  "name": "kachel-solar",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./web"
+  }
+}
