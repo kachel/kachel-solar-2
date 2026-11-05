@@ -28,7 +28,7 @@
   :focus-visible { outline: 3px dashed var(--purple); outline-offset: 5px; }
 
   /* ================= layout ================= */
-  .app { height: 100vh; height: 100dvh; display: grid; grid-template-rows: 1fr auto; }
+  .app { height: 100vh; height: 100dvh; height: var(--app-h, 100dvh); display: grid; grid-template-rows: 1fr auto; }
   .drawer { position: relative; height: var(--drawer-h); transition: height .28s ease; z-index: 30; }
   .app[data-open="false"] .drawer { height: 0; }
 
@@ -249,6 +249,8 @@
     .app[data-open="false"] .tab svg { transform: rotate(90deg); }
     .slots { flex-direction: column; flex-wrap: wrap; align-content: space-evenly; justify-content: space-evenly; gap: 8px 0; padding: 24px 12px 96px 0; }
     .slot { width: 50%; }
+    .slot[data-alt="0"] { translate: -16px 0; }   /* zigzag: every other sticker in a column steps aside */
+    .slot[data-alt="1"] { translate: 16px 0; }
     .slot:nth-child(1) { transform: translateY(-4px) rotate(-5deg); }
     .slot:nth-child(2) { transform: translateY(6px) rotate(4deg); }
     .slot:nth-child(3) { transform: translateY(-2px) rotate(-3deg); }
@@ -681,6 +683,7 @@ function renderDrawer() {
   slotsEl.innerHTML = '';
   free.slice(state.page * ps, state.page * ps + ps).forEach(def => slotsEl.appendChild(mk(def)));
   $('nav').hidden = !paged;
+  if (vert) { let col = null, n = 0; [...slotsEl.children].forEach(s => { if (s.offsetLeft !== col) { col = s.offsetLeft; n = 0; } s.dataset.alt = n++ % 2; }); }
   dotsEl.innerHTML = '';
   for (let i = 0; i < pages; i++) { const d = document.createElement('button'); d.className = 'dot'; d.type = 'button'; d.setAttribute('aria-label', `Drawer ${i + 1} of ${pages}`); if (i === state.page) d.setAttribute('aria-current', 'true'); d.onclick = () => { state.page = i; save(); renderDrawer(); }; dotsEl.appendChild(d); }
   $('prev').disabled = pages < 2; $('next').disabled = pages < 2;
@@ -705,7 +708,10 @@ addEventListener('pointerdown', e => {
   setSelected(fromCanvas ? drag.id : null);
   if (state.gridLock) { const ids = lockedIds(); drag.cells = computeGrid(fromCanvas ? ids : ids.concat(drag.id)).cells; }
   if (fromCanvas) { state.order = state.order.filter(i => i !== drag.id).concat(drag.id); }
-  else { dragLayer.appendChild(el); el.style.left = '0px'; el.style.top = '0px'; el.style.transform = tf(r.left, r.top, 0, 1.06); }
+  else {
+    dragLayer.appendChild(el); el.style.left = '0px'; el.style.top = '0px'; el.style.transform = tf(r.left, r.top, 0, 1.06);
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}   // moving the node drops the capture; touch browsers (Android Chrome) then stop sending moves
+  }
   el.style.zIndex = 999; el.classList.add('drag');
   e.preventDefault();
 });
@@ -1047,7 +1053,11 @@ $('tab').onclick = () => { state.open = !state.open; save(); app.dataset.open = 
 $('prev').onclick = () => { const pages = $('dots').children.length; state.page = (state.page - 1 + pages) % pages; save(); renderDrawer(); };
 $('next').onclick = () => { const pages = $('dots').children.length; state.page = (state.page + 1) % pages; save(); renderDrawer(); };
 document.querySelectorAll('.units button').forEach(b => b.onclick = () => { unit = state.unit = b.dataset.unit; state.unitSet = true; save(); renderAll(); });
-addEventListener('resize', () => { renderCanvas(); renderDrawer(); if (state.gridLock) relayoutLocked(false); });
+/* some tablet browsers (Fire / Silk-era Chrome) report 100vh taller than the visible page, pushing the drawer tab off screen; pin the app to the real inner height */
+const fitHeight = () => document.documentElement.style.setProperty('--app-h', innerHeight + 'px');
+fitHeight(); renderCanvas(); renderDrawer();
+addEventListener('orientationchange', () => setTimeout(() => { fitHeight(); renderCanvas(); renderDrawer(); }, 250));
+addEventListener('resize', () => { fitHeight(); renderCanvas(); renderDrawer(); if (state.gridLock) relayoutLocked(false); });
 
 /* hide the top bar after a quiet spell; any movement, touch, or key brings it back */
 const IDLE_MS = 4000, topBar = document.querySelector('.top-actions');
