@@ -112,6 +112,25 @@
   .panel { position: absolute; z-index: 1200; right: 14px; top: 86px; width: min(310px, calc(100% - 28px)); padding: 14px 14px 6px; background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 0 0 5px #fff, 0 12px 20px rgba(0,0,0,.45); }
   .panel[hidden] { display: none; }
   .panel { max-height: calc(100% - 96px); overflow-y: auto; overscroll-behavior: contain; }
+  /* first visit: the same panel opens as a centered modal with a welcome note, then glides to its dropdown spot */
+  .intro-backdrop { position: fixed; inset: 0; z-index: 1190; background: rgba(11, 11, 13, .62); transition: opacity .4s ease; }
+  .intro-backdrop[hidden], .welcome[hidden], .intro-only[hidden], .introerr[hidden] { display: none; }
+  .intro-backdrop.out, .welcome.out { opacity: 0; }
+  .welcome { position: fixed; z-index: 1200; width: min(300px, calc(100vw - 28px)); padding: 18px 20px; background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 0 0 5px #fff, 0 12px 20px rgba(0,0,0,.45); font: 800 18px/1.35 'Nunito', sans-serif; transition: opacity .3s ease; }
+  .panel:focus { outline: none; }
+  .panel.intro { position: fixed; z-index: 1200; left: 50%; top: 50%; right: auto; transform: translate(-50%, -50%); max-height: calc(100dvh - 28px); }
+  .introdone { width: 100%; min-height: 44px; border: 2.5px solid var(--ink); border-radius: 999px; background: #ffd23f; font: 800 16px/1 'Baloo 2', sans-serif; cursor: pointer; }
+  .introdone:hover { filter: brightness(.96); }
+  .introerr { margin: 0 2px 8px; font: 800 13px/1.3 'Nunito', sans-serif; color: #c0182f; }
+  html[data-theme="simple"] .welcome { background: var(--bg); border-width: 2px; box-shadow: 0 10px 28px rgba(0,0,0,.2); }
+  html[data-theme="simple"] .introdone { background: var(--f3); }
+  @media (min-width: 700px) {
+    .welcome { left: 50%; top: 50%; transform: translate(calc(-100% - 185px), -50%); }   /* desktop: note sits to the left of the modal */
+  }
+  @media (max-width: 699px) {
+    .welcome { left: 50%; top: 14px; transform: translateX(-50%); }                     /* mobile: note sits on top of the modal */
+    .panel.intro { top: auto; bottom: 14px; transform: translateX(-50%); max-height: calc(100dvh - 190px); }
+  }
   .cityfield { position: relative; }
   #cityInput { width: 100%; min-height: 44px; padding: 0 14px; border: 2.5px solid var(--ink); border-radius: 14px; background: #fff; color: var(--ink); font: 700 16px/1 'Nunito', sans-serif; }
   #cityInput::placeholder { color: var(--ink); opacity: .5; }
@@ -351,7 +370,13 @@
         <h3 id="h-color">Color</h3>
         <div class="swatches" id="swatches" role="group" aria-labelledby="h-color"></div>
       </div>
+      <div class="grp intro-only" hidden>
+        <p class="introerr" id="introErr" role="alert" hidden>Choose a city to continue.</p>
+        <button type="button" class="introdone" id="introDone">Let's go</button>
+      </div>
     </section>
+    <div class="intro-backdrop" id="introBackdrop" hidden></div>
+    <div class="welcome" id="welcome" hidden>Welcome to Sticker Weather! Put your old tech to work again with this weather dashboard.</div>
   </main>
 
   <aside class="drawer" id="drawer" aria-label="Sticker sheet">
@@ -381,6 +406,7 @@ const phaseName = p => p < .03 || p > .97 ? 'new moon' : p < .22 ? 'waxing cresc
 const precipLabel = c => c >= 95 ? 'thunderstorm' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'snow' : [56, 57, 66, 67].includes(c) ? 'freezing rain' : c >= 51 && c <= 55 ? 'drizzle' : 'rain';
 
 async function loadData() {
+  if (!state.city) return;                       // no city chosen yet: nothing to look up
   try {
     const u = `https://api.open-meteo.com/v1/forecast?latitude=${CHI.lat}&longitude=${CHI.lon}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=precipitation_probability,uv_index&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&temperature_unit=fahrenheit&timezone=${CHI.tz}&forecast_days=1`;
     const j = await (await fetch(u)).json();
@@ -487,7 +513,7 @@ const bandInk = i => (isSimple() ? i >= 4 : i >= 5) ? ONDEEP : INK;
 
 const STICKERS = [
   { id: 'city', name: 'City', w: 152, h: 70, art: () => {
-      const label = CHI.name, fs = Math.min(32, Math.round(124 / (label.length * .56)));
+      const label = state.city ? CHI.name : '—', fs = Math.min(32, Math.round(124 / (label.length * .56)));
       return `<svg viewBox="0 0 150 70">${ol('rect', 'x="2" y="2" width="146" height="66" rx="24"')}<rect x="2" y="2" width="146" height="66" rx="24" fill="${HI1}" stroke="${INK}" stroke-width="4"/><text x="75" y="36" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-.5" fill="${INK}">${label}</text></svg>`; } },
   { id: 'time', name: 'Time', w: 116, h: 116, art: () => {
       const t = timeParts(), fs = t.hm.length >= 5 ? 25 : 32;
@@ -801,7 +827,7 @@ addEventListener('pointerup', endResize); addEventListener('pointercancel', endR
 
 /* keyboard: Enter/Space moves a sticker between drawer and canvas; arrows nudge placed stickers */
 addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !panel.hidden) { closePanel(); $('gear').focus(); return; }
+  if (e.key === 'Escape' && !panel.hidden && !panel.classList.contains('intro')) { closePanel(); $('gear').focus(); return; }
   const el = e.target.closest && e.target.closest('.sticker');
   if (el) {
     const id = el.dataset.id, onCanvas = el.parentElement === canvas;
@@ -836,7 +862,7 @@ addEventListener('keydown', e => {
 function openPanel() { panel.hidden = false; $('gear').setAttribute('aria-expanded', 'true'); const f = panel.querySelector('button:not([hidden])'); if (f) f.focus(); showCurrentCity(); }
 function closePanel() { panel.hidden = true; $('gear').setAttribute('aria-expanded', 'false'); }
 $('gear').onclick = () => panel.hidden ? openPanel() : closePanel();
-addEventListener('pointerdown', e => { if (!panel.hidden && !e.target.closest('#panel') && !e.target.closest('#gear')) closePanel(); }, true);
+addEventListener('pointerdown', e => { if (!panel.hidden && !panel.classList.contains('intro') && !e.target.closest('#panel') && !e.target.closest('#gear')) closePanel(); }, true);
 panel.querySelectorAll('[data-clock-btn]').forEach(b => b.onclick = () => { state.clock = b.dataset.clockBtn; save(); applyTheme(); renderAll(); });
 panel.querySelectorAll('[data-theme-btn]').forEach(b => b.onclick = () => { state.theme = b.dataset.themeBtn; save(); applyTheme(); renderAll(); });
 panel.querySelectorAll('[data-mode-btn]').forEach(b => b.onclick = () => { state.mode = b.dataset.modeBtn; save(); applyTheme(); renderAll(); });
@@ -846,7 +872,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const cityInput = $('cityInput'), cityList = $('cityList'), cityMsg = $('cityMsg');
 let cityResults = [], cityActive = -1, cityTimer = null, citySeq = 0;
 const placeLine = c => [c.admin1, c.country].filter(Boolean).join(', ');
-const showCurrentCity = () => { const c = state.city || { name: CHI.name, admin1: 'Illinois', country: 'United States' }; cityMsg.textContent = [c.name, placeLine(c)].filter(Boolean).join(', '); };
+const showCurrentCity = () => { const c = state.city; cityMsg.textContent = c ? [c.name, placeLine(c)].filter(Boolean).join(', ') : ''; };
 function renderCityList() {
   cityList.innerHTML = cityResults.map((c, i) => `<li role="option" id="city-opt-${i}" data-i="${i}" aria-selected="${i === cityActive}">${esc(c.name)}<small>${esc(placeLine(c))}</small></li>`).join('');
   cityList.hidden = !cityResults.length;
@@ -870,6 +896,7 @@ function pickCity(c) {
   state.city = { name: c.name, admin1: c.admin1 || '', country: c.country || '', cc: c.country_code || '', lat: c.latitude, lon: c.longitude, tz: c.timezone };
   Object.assign(CHI, { name: c.name, lat: c.latitude, lon: c.longitude, tz: c.timezone });
   if (!state.unitSet) unit = state.unit = c.country_code === 'US' ? 'F' : 'C';          // follow the country until the user picks a unit
+  $('introErr').hidden = true;
   save(); cityResults = []; cityActive = -1; renderCityList(); cityInput.value = '';
   cityMsg.textContent = 'Updating…'; renderAll();
   loadData().then(() => { renderAll(); showCurrentCity(); });
@@ -1105,6 +1132,36 @@ setInterval(() => { const t = timeParts(); document.querySelectorAll('[data-time
 
 buildSwatches(); buildCoverSwatches(); buildPalettes(); applyTheme(); renderAll(); updateGridButton(); if (state.gridLock) relayoutLocked(false);
 loadData().then(renderAll);
+
+/* ============ first visit: welcome modal ============ */
+const WELCOME_KEY = 'lookin-up-welcomed';
+function startIntro() {
+  let seen = false; try { seen = !!localStorage.getItem(WELCOME_KEY); } catch (e) {}
+  if (seen) return;
+  const back = $('introBackdrop'), note = $('welcome'), only = panel.querySelector('.intro-only');
+  [back, note, only].forEach(n => n.hidden = false);
+  panel.hidden = false; panel.classList.add('intro'); panel.setAttribute('aria-modal', 'true');
+  showCurrentCity();
+  panel.tabIndex = -1; panel.focus();            // focus the dialog, not the search box, so phones don't pop the keyboard open
+  $('introDone').onclick = () => {
+    if (!state.city) { $('introErr').hidden = false; cityInput.focus(); return; }   // a city is required to continue
+    try { localStorage.setItem(WELCOME_KEY, '1'); } catch (e) {}
+    const from = panel.getBoundingClientRect();
+    panel.classList.remove('intro'); panel.removeAttribute('aria-modal'); only.hidden = true;
+    back.classList.add('out'); note.classList.add('out');
+    const to = panel.getBoundingClientRect();
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      panel.style.transformOrigin = 'top left';
+      panel.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`;
+      void panel.offsetWidth;
+      panel.style.transition = 'transform .55s cubic-bezier(.3, .9, .3, 1)';
+      panel.style.transform = 'none';
+    }
+    $('gear').setAttribute('aria-expanded', 'true');
+    setTimeout(() => { panel.style.transition = panel.style.transform = panel.style.transformOrigin = ''; back.hidden = note.hidden = true; back.classList.remove('out'); note.classList.remove('out'); }, 600);
+  };
+}
+startIntro();
 </script>
 </body>
 </html>
