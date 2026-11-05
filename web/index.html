@@ -319,6 +319,13 @@
         <p class="citymsg" id="cityMsg" aria-live="polite"></p>
       </div>
       <div class="grp">
+        <h3 id="h-clock">Time</h3>
+        <div class="seg" role="group" aria-labelledby="h-clock">
+          <button type="button" data-clock-btn="12" aria-pressed="true">12-hour</button>
+          <button type="button" data-clock-btn="24" aria-pressed="false">24-hour</button>
+        </div>
+      </div>
+      <div class="grp">
         <h3 id="h-theme">Theme</h3>
         <div class="seg" role="group" aria-labelledby="h-theme">
           <button type="button" data-theme-btn="notebook" aria-pressed="true">Notebook</button>
@@ -367,9 +374,9 @@
 /* ============ data (Chicago) ============ */
 const CHI = { name: 'Chicago', lat: 41.8781, lon: -87.6298, tz: 'America/Chicago' };
 // fallback sample, replaced by live Open-Meteo data when the fetch succeeds
-const data = { tempF: 54, feelsF: 51, highF: 64, lowF: 42, code: 0, isDay: 0, precip: 0, sunrise: '6:33 AM', sunset: '4:49 PM', moonPhase: 0.5, uvNow: 3, uvPeak: 5, aqi: 42 };
+const data = { tempF: 54, feelsF: 51, highF: 64, lowF: 42, code: 0, isDay: 0, precip: 0, sr: '06:33', ss: '16:49', get sunrise() { return clockHM(this.sr); }, get sunset() { return clockHM(this.ss); }, moonPhase: 0.5, uvNow: 3, uvPeak: 5, aqi: 42 };
 
-const fmt12 = iso => { const [h, m] = iso.slice(11, 16).split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+const clockHM = hm => { const [h, m] = hm.split(':').map(Number), mm = String(m).padStart(2, '0'); return state.clock === '24' ? `${String(h).padStart(2, '0')}:${mm}` : `${((h + 11) % 12) + 1}:${mm} ${h < 12 ? 'AM' : 'PM'}`; };
 const phaseName = p => p < .03 || p > .97 ? 'new moon' : p < .22 ? 'waxing crescent' : p < .28 ? 'first quarter' : p < .47 ? 'waxing gibbous' : p < .53 ? 'full moon' : p < .72 ? 'waning gibbous' : p < .78 ? 'last quarter' : 'waning crescent';
 const precipLabel = c => c >= 95 ? 'thunderstorm' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'snow' : [56, 57, 66, 67].includes(c) ? 'freezing rain' : c >= 51 && c <= 55 ? 'drizzle' : 'rain';
 
@@ -381,7 +388,7 @@ async function loadData() {
     Object.assign(data, {
       tempF: j.current.temperature_2m, feelsF: j.current.apparent_temperature, code: j.current.weather_code, isDay: j.current.is_day,
       highF: j.daily.temperature_2m_max[0], lowF: j.daily.temperature_2m_min[0],
-      precip: j.hourly.precipitation_probability[i] ?? 0, sunrise: fmt12(j.daily.sunrise[0]), sunset: fmt12(j.daily.sunset[0]),
+      precip: j.hourly.precipitation_probability[i] ?? 0, sr: j.daily.sunrise[0].slice(11, 16), ss: j.daily.sunset[0].slice(11, 16),
       uvNow: j.hourly.uv_index[i] ?? 0, uvPeak: j.daily.uv_index_max[0] ?? 0
     });
   } catch (e) { /* keep fallback */ }
@@ -458,9 +465,10 @@ const DROP = 'M50 3 C56 18 98 56 98 94 A48 44 0 0 1 2 94 C2 56 44 18 50 3 Z';
 const skyKind = () => data.code <= 1 ? 'sunny' : data.code === 2 ? 'partly' : 'cloudy';
 
 function timeParts() {
-  const p = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: CHI.tz }).formatToParts(new Date());
+  const h24 = state.clock === '24';
+  const p = new Intl.DateTimeFormat('en-US', { hour: h24 ? '2-digit' : 'numeric', minute: '2-digit', hourCycle: h24 ? 'h23' : 'h12', timeZone: CHI.tz }).formatToParts(new Date());
   const g = t => (p.find(x => x.type === t) || {}).value || '';
-  return { hm: `${g('hour')}:${g('minute')}`, ap: g('dayPeriod').toUpperCase() };
+  return { hm: `${g('hour')}:${g('minute')}`, ap: h24 ? '' : g('dayPeriod').toUpperCase() };
 }
 function dateParts() {
   const p = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: CHI.tz }).formatToParts(new Date());
@@ -487,7 +495,7 @@ const STICKERS = [
       return `<svg viewBox="0 0 150 70">${ol('rect', 'x="2" y="2" width="146" height="66" rx="24"')}<rect x="2" y="2" width="146" height="66" rx="24" fill="${HI1}" stroke="${INK}" stroke-width="4"/><text x="75" y="36" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-.5" fill="${INK}">${label}</text></svg>`; } },
   { id: 'time', name: 'Time', w: 116, h: 116, art: () => {
       const t = timeParts(), fs = t.hm.length >= 5 ? 25 : 32;
-      return `<svg viewBox="0 0 100 100">${ol('circle', 'cx="50" cy="50" r="47"')}<circle cx="50" cy="50" r="47" fill="${PNK}" stroke="${INK}" stroke-width="4"/>${tickMarks()}<text data-time-hm x="50" y="42" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-1" fill="${INK}">${t.hm}</text><text data-time-ap class="lab" x="50" y="69" text-anchor="middle" font-size="12" letter-spacing="1.5" fill="${INK}">${t.ap}</text></svg>`; } },
+      return `<svg viewBox="0 0 100 100">${ol('circle', 'cx="50" cy="50" r="47"')}<circle cx="50" cy="50" r="47" fill="${PNK}" stroke="${INK}" stroke-width="4"/>${tickMarks()}<text data-time-hm x="50" y="${t.ap ? 42 : 52}" text-anchor="middle" dominant-baseline="central" font-size="${fs}" letter-spacing="-1" fill="${INK}">${t.hm}</text><text data-time-ap class="lab" x="50" y="69" text-anchor="middle" font-size="12" letter-spacing="1.5" fill="${INK}">${t.ap}</text></svg>`; } },
   { id: 'date', name: 'Date', w: 100, h: 108, art: () => {
       const t = dateParts(), box = 'x="2" y="2" width="96" height="104" rx="14"';
       return `<svg viewBox="0 0 100 108">${ol('rect', box)}<rect ${box} fill="${CLOUDF}"/><path d="M2 38 V16 A14 14 0 0 1 16 2 H84 A14 14 0 0 1 98 16 V38 Z" fill="${HI1}"/><line x1="2" y1="38" x2="98" y2="38" stroke="${INK}" stroke-width="3"/><rect ${box} fill="none" stroke="${INK}" stroke-width="4"/><text class="lab" x="50" y="21" text-anchor="middle" dominant-baseline="central" font-size="15" letter-spacing="2" fill="${INK}">${t.mo}</text><text x="50" y="68" text-anchor="middle" dominant-baseline="central" font-size="${t.d.length > 1 ? 40 : 46}" letter-spacing="-1.5" fill="${INK}">${t.d}</text><text class="lab" x="50" y="94" text-anchor="middle" dominant-baseline="central" font-size="${t.wd.length > 7 ? 10 : 11}" letter-spacing="1.2" fill="${INK}">${t.wd}</text></svg>`; } },
@@ -542,7 +550,8 @@ const KEY = 'lookin-up-stickers-v3';
 const SWATCHES = [['#6b7280', 'Graphite'], ['#4f6df5', 'Blue'], ['#14a39a', 'Teal'], ['#3fa34d', 'Green'], ['#d99a00', 'Amber'], ['#f0644d', 'Coral'], ['#e5589b', 'Rose'], ['#8b5cf6', 'Violet']];
 const state = {
   placed: { city: { fx: .12, fy: .2, r: -6 }, time: { fx: .78, fy: .3, r: 7 }, date: { fx: .45, fy: .62, r: -4 } }, order: ['city', 'time', 'date'], page: 0, open: true, unit: 'F',
-  theme: 'notebook', mode: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', color: '#4f6df5', cover: '#3a3540', palette: 'candy', gridLock: false, gridOrder: [], city: null, unitSet: false
+  theme: 'notebook', mode: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', color: '#4f6df5', cover: '#3a3540', palette: 'candy', gridLock: false, gridOrder: [], city: null, unitSet: false,
+  clock: new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12 === false ? '24' : '12'   // follows the device until changed in settings
 };
 try { Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 if (state.cover === '#0c0c0f' || state.cover === '#70737a') state.cover = '#3a3540';   // earlier defaults are retired; saved copies move to the current one
@@ -579,6 +588,7 @@ function applyTheme() {
   panel.querySelectorAll('.notebook-only').forEach(el => el.hidden = isSimple());
   panel.querySelectorAll('[data-theme-btn]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeBtn === state.theme)));
   panel.querySelectorAll('[data-mode-btn]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeBtn === state.mode)));
+  panel.querySelectorAll('[data-clock-btn]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.clockBtn === state.clock)));
   panel.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color.toLowerCase() === state.color.toLowerCase())));
   panel.querySelectorAll('#coverSwatches .sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color.toLowerCase() === state.cover.toLowerCase())));
   panel.querySelectorAll('#palettes .pal').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pal === state.palette)));
@@ -830,6 +840,7 @@ function openPanel() { panel.hidden = false; $('gear').setAttribute('aria-expand
 function closePanel() { panel.hidden = true; $('gear').setAttribute('aria-expanded', 'false'); }
 $('gear').onclick = () => panel.hidden ? openPanel() : closePanel();
 addEventListener('pointerdown', e => { if (!panel.hidden && !e.target.closest('#panel') && !e.target.closest('#gear')) closePanel(); }, true);
+panel.querySelectorAll('[data-clock-btn]').forEach(b => b.onclick = () => { state.clock = b.dataset.clockBtn; save(); applyTheme(); renderAll(); });
 panel.querySelectorAll('[data-theme-btn]').forEach(b => b.onclick = () => { state.theme = b.dataset.themeBtn; save(); applyTheme(); renderAll(); });
 panel.querySelectorAll('[data-mode-btn]').forEach(b => b.onclick = () => { state.mode = b.dataset.modeBtn; save(); applyTheme(); renderAll(); });
 
