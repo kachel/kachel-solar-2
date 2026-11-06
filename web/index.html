@@ -483,7 +483,7 @@ function burst(cx, cy, r, bumps = 12, depth = 5) {
   for (let i = 0; i < 180; i++) { const a = i / 180 * 2 * Math.PI, rr = r + depth * Math.cos(bumps * a); pts.push(`${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`); }
   return `M${pts.join('L')}Z`;
 }
-const face = (cx, cy, s = 1) => `<g transform="translate(${cx} ${cy}) scale(${s})"><circle cx="-13" cy="5" r="3.6" fill="${BLUSH}" opacity=".85"/><circle cx="13" cy="5" r="3.6" fill="${BLUSH}" opacity=".85"/><g fill="none" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"><path d="M-10 -2 q3.5 -4.5 7 0"/><path d="M3 -2 q3.5 -4.5 7 0"/><path d="M-5 5 q5 6 10 0"/></g></g>`;
+const face = (cx, cy, s = 1, ink = INK) => `<g transform="translate(${cx} ${cy}) scale(${s})"><circle cx="-13" cy="5" r="3.6" fill="${BLUSH}" opacity=".85"/><circle cx="13" cy="5" r="3.6" fill="${BLUSH}" opacity=".85"/><g fill="none" stroke="${ink}" stroke-width="3.2" stroke-linecap="round"><path d="M-10 -2 q3.5 -4.5 7 0"/><path d="M3 -2 q3.5 -4.5 7 0"/><path d="M-5 5 q5 6 10 0"/></g></g>`;
 const CLOUD = 'M22 68 C6 68 6 44 24 44 C24 26 52 20 60 38 C78 34 86 54 72 64 C70 68 64 68 62 68 Z';
 const DROP = 'M50 3 C56 18 98 56 98 94 A48 44 0 0 1 2 94 C2 56 44 18 50 3 Z';
 const skyKind = () => data.code <= 1 ? 'sunny' : data.code === 2 ? 'partly' : 'cloudy';
@@ -544,7 +544,7 @@ const STICKERS = [
       const label = k === 'sunny' ? (day ? 'SUNNY' : 'CLEAR') : k === 'partly' ? 'PARTLY CLOUDY' : 'CLOUDY';
       const body = (cx, cy, r, s) => day
         ? `<path d="${burst(cx, cy, r, 12, r * .14)}" fill="${YEL}" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/>${face(cx, cy, s)}`
-        : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${CRM}" stroke="${INK}" stroke-width="3.4"/>${face(cx, cy, s)}`;
+        : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${CRM}" stroke="${INK}" stroke-width="3.4"/>${face(cx, cy, s, isSimple() ? NAVY : INK)}`;   // Simple dark: ink and the pale moon are both light, so the face uses the deep tone
       const bodyEdge = (cx, cy, r) => day ? edge(burst(cx, cy, r, 12, r * .14)) : ol('circle', `cx="${cx}" cy="${cy}" r="${r}"`);
       const cloud = t => `<g transform="${t}">${edge(CLOUD)}</g>`;
       const cloudIn = (t, f) => `<g transform="${t}"><path d="${CLOUD}" fill="${CLOUDF}" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/>${f || ''}</g>`;
