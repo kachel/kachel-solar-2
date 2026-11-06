@@ -548,7 +548,7 @@ const STICKERS = [
       const bodyEdge = (cx, cy, r) => day ? edge(burst(cx, cy, r, 12, r * .14)) : ol('circle', `cx="${cx}" cy="${cy}" r="${r}"`);
       const cloud = t => `<g transform="${t}">${edge(CLOUD)}</g>`;
       const cloudIn = (t, f) => `<g transform="${t}"><path d="${CLOUD}" fill="${CLOUDF}" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/>${f || ''}</g>`;
-      const icon = k === 'sunny' ? bodyEdge(44, 34, 36) + body(44, 34, 36, 1.1)
+      const icon = k === 'sunny' ? bodyEdge(44, 46, 27) + body(44, 46, 27, .84)
         : k === 'partly' ? bodyEdge(58, 36, 25) + cloud('translate(-2 6) scale(.9)') + body(58, 36, 25, .7) + cloudIn('translate(-2 6) scale(.9)')
         : cloud('translate(0 4)') + cloudIn('translate(0 4)', face(46, 52, .95));
       const words = label.length > 8 && label.includes(' ') ? label.split(' ') : [label];
