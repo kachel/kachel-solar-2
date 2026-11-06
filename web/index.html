@@ -273,10 +273,12 @@
     :root { --spine-w: 44px; }
     .app { grid-template-rows: none; grid-template-columns: 1fr auto; }
     .drawer { height: 100%; width: var(--drawer-w); transition: width .28s ease; }
-    .app[data-open="false"] .drawer { height: 100%; width: var(--drawer-w-closed); }
+    .app[data-open="false"] .drawer { height: 100%; width: 0; }                 /* closed: no empty strip, the canvas fills the screen */
+    .app[data-open="false"] .tab { left: -100px; }                               /* the tab stays visible, tucked against the right edge */
+    html[data-theme="simple"] .app[data-open="false"] .tab { left: -86px; }
     .drawer-inner { flex-direction: row-reverse; border-top: 0; box-shadow: -8px 0 18px rgba(0,0,0,.35); }
     html[data-theme="simple"] .drawer-inner { border-left: 2px solid var(--ink); box-shadow: -6px 0 18px rgba(0,0,0,.1); }
-    .tab { right: auto; left: 14px; top: auto; bottom: 16px; width: 86px; height: 54px; }
+    .tab { right: auto; left: 14px; top: auto; bottom: 16px; width: 86px; height: 54px; transition: transform .15s, left .28s ease; }
     html[data-theme="simple"] .tab { left: 0; bottom: 16px; border-radius: 0 14px 14px 0; }
     .tab svg { transform: rotate(-90deg); }
     .app[data-open="false"] .tab svg { transform: rotate(90deg); }
