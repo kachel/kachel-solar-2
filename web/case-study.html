@@ -1,178 +1,446 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Designing the Sticker Weather website</title>
-<link rel="icon" type="image/svg+xml" href="favicon-light.svg" media="(prefers-color-scheme: light)">
-<link rel="icon" type="image/svg+xml" href="favicon-dark.svg" media="(prefers-color-scheme: dark)">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #1b1d2a;
-    --cover: #3a3540;
-    --spine: #f4a3b8;
-    --paper: #fff;
-    --cream: #fff6dc;
-    --pink: #ff7ab8;
-    --yellow: #ffd23f;
-    --blue: #5ec8ff;
-    --orange: #ff9b6a;
-    --green: #8be28b;
-    --purple: #a77bff;
-    --spine-w: 30px;
-  }
-  * { box-sizing: border-box; }
-  html { background: var(--cover); }
-  body {
-    margin: 0; min-height: 100vh; min-height: 100dvh; color: var(--ink); font-family: 'Nunito', system-ui, sans-serif;
-    background-color: var(--cover);
-    /* composition-notebook marble, with a light purple speckle */
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.075' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.80  0 0 0 0 0.72  0 0 0 0 1  0 0 0 -34 15.6'/></filter><rect width='420' height='420' filter='url(%23n)'/></svg>");
-    background-size: 420px 420px;
-    box-shadow: inset 0 0 50px rgba(0, 0, 0, .55);
-  }
-  :focus-visible { outline: 3px dashed #fff; outline-offset: 6px; }
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Designing the Sticker Weather Website</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="favicon-light.svg"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="favicon-dark.svg"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #1b1d2a;
+        --cover: #3a3540;
+        --spine: #f4a3b8;
+        --paper: #fff;
+        --cream: #fff6dc;
+        --pink: #ff7ab8;
+        --yellow: #ffd23f;
+        --blue: #5ec8ff;
+        --orange: #ff9b6a;
+        --green: #8be28b;
+        --purple: #a77bff;
+        --spine-w: 30px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--cover);
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+        color: var(--ink);
+        font-family: "Nunito", system-ui, sans-serif;
+        background-color: var(--cover);
+        /* composition-notebook marble: #3a3540 cover with a white speckle, same as the Sticker Weather page */
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.075' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -34 15.6'/></filter><rect width='420' height='420' filter='url(%23n)'/></svg>");
+        background-size: 420px 420px;
+        box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.55);
+      }
+      :focus-visible {
+        outline: 3px dashed #fff;
+        outline-offset: 6px;
+      }
 
-  /* the notebook's stitched spine */
-  .spine { position: fixed; left: 0; top: 0; bottom: 0; width: var(--spine-w); z-index: 1;
-    background: linear-gradient(90deg, #e98aa4, var(--spine) 40%, #f9b9c9); border-right: 3px solid rgba(0, 0, 0, .35); }
-  .spine::after { content: ''; position: absolute; top: 0; bottom: 0; right: 7px; border-right: 2.5px dashed rgba(255, 255, 255, .7); }
+      /* the notebook's stitched spine */
+      .spine {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--spine-w);
+        z-index: 1;
+        background: linear-gradient(90deg, #e98aa4, var(--spine) 40%, #f9b9c9);
+        border-right: 3px solid rgba(0, 0, 0, 0.35);
+      }
+      .spine::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 7px;
+        border-right: 2.5px dashed rgba(255, 255, 255, 0.7);
+      }
 
-  main { position: relative; z-index: 2; max-width: 760px; margin: 0 auto; padding: 56px 20px 96px calc(var(--spine-w) + 20px); }
+      main {
+        position: relative;
+        z-index: 2;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 56px 20px 96px calc(var(--spine-w) + 20px);
+      }
 
-  /* die-cut sticker: ink outline, white border, soft drop shadow */
-  .sticker {
-    border: 3px solid var(--ink); border-radius: 26px;
-    box-shadow: 0 0 0 6px #fff, 0 10px 14px rgba(0, 0, 0, .5);
-  }
+      /* die-cut sticker: ink outline, white border, soft drop shadow */
+      .sticker {
+        border: 3px solid var(--ink);
+        border-radius: 26px;
+        box-shadow:
+          0 0 0 6px #fff,
+          0 10px 14px rgba(0, 0, 0, 0.5);
+      }
 
-  .title { display: inline-block; margin: 0 0 44px; padding: 18px 28px; background: var(--yellow); transform: rotate(-2deg);
-    font: 800 clamp(28px, 6vw, 44px)/1.1 'Baloo 2', sans-serif; letter-spacing: -.5px; }
+      .title {
+        display: inline-block;
+        margin: 0 0 44px;
+        padding: 18px 28px;
+        background: var(--yellow);
+        transform: rotate(-2deg);
+        font:
+          800 clamp(28px, 6vw, 44px)/1.1 "Baloo 2",
+          sans-serif;
+        letter-spacing: -0.5px;
+      }
 
-  .drawers { display: grid; gap: 30px; }
+      .drawers {
+        display: grid;
+        gap: 30px;
+      }
 
-  details.sticker { background: var(--paper); overflow: hidden; }
-  details.sticker:nth-child(5n+1) { transform: rotate(-1.2deg); --tint: var(--pink); }
-  details.sticker:nth-child(5n+2) { transform: rotate(1deg); --tint: var(--blue); }
-  details.sticker:nth-child(5n+3) { transform: rotate(-.6deg); --tint: var(--orange); }
-  details.sticker:nth-child(5n+4) { transform: rotate(1.3deg); --tint: var(--green); }
-  details.sticker:nth-child(5n+5) { transform: rotate(-1deg); --tint: var(--purple); }
+      details.sticker {
+        background: var(--paper);
+        overflow: hidden;
+      }
+      details.sticker:nth-child(5n + 1) {
+        transform: rotate(-1.2deg);
+        --tint: var(--pink);
+      }
+      details.sticker:nth-child(5n + 2) {
+        transform: rotate(1deg);
+        --tint: var(--blue);
+      }
+      details.sticker:nth-child(5n + 3) {
+        transform: rotate(-0.6deg);
+        --tint: var(--orange);
+      }
+      details.sticker:nth-child(5n + 4) {
+        transform: rotate(1.3deg);
+        --tint: var(--green);
+      }
+      details.sticker:nth-child(5n + 5) {
+        transform: rotate(-1deg);
+        --tint: var(--purple);
+      }
 
-  summary { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 14px 18px 14px 22px; cursor: pointer; list-style: none; background: var(--tint);
-    font: 800 clamp(18px, 3.4vw, 22px)/1.25 'Baloo 2', sans-serif; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-  summary::-webkit-details-marker { display: none; }
-  summary::after { content: ''; flex: none; margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: #fff var(--chev) center / 20px no-repeat; border: 2.5px solid var(--ink);
-    --chev: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b1d2a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 7 7-7'/></svg>");
-    transition: transform .2s ease; }
-  details[open] > summary::after { transform: rotate(180deg); }
-  summary:hover { filter: brightness(1.05); }
+      summary {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 64px;
+        padding: 14px 18px 14px 22px;
+        cursor: pointer;
+        list-style: none;
+        background: var(--tint);
+        font:
+          800 clamp(18px, 3.4vw, 22px)/1.25 "Baloo 2",
+          sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::after {
+        content: "";
+        flex: none;
+        margin-left: auto;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #fff var(--chev) center / 20px no-repeat;
+        border: 2.5px solid var(--ink);
+        --chev: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b1d2a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 7 7-7'/></svg>");
+        transition: transform 0.2s ease;
+      }
+      details[open] > summary::after {
+        transform: rotate(180deg);
+      }
+      summary:hover {
+        filter: brightness(1.05);
+      }
 
-  .answer { padding: 18px 22px 22px; background: var(--cream); border-top: 3px solid var(--ink); font: 600 17px/1.6 'Nunito', sans-serif; }
-  .answer ol { margin: 0 0 1em; padding-left: 1.4em; }
-  .answer li + li { margin-top: .4em; }
-  .answer > :first-child { margin-top: 0; }
-  .answer > :last-child { margin-bottom: 0; }
+      .answer {
+        padding: 18px 22px 22px;
+        background: var(--cream);
+        border-top: 3px solid var(--ink);
+        font:
+          600 17px/1.6 "Nunito",
+          sans-serif;
+      }
+      .answer ol {
+        margin: 0 0 1em;
+        padding-left: 1.4em;
+      }
+      .answer li + li {
+        margin-top: 0.4em;
+      }
+      .answer > :first-child {
+        margin-top: 0;
+      }
+      .answer > :last-child {
+        margin-bottom: 0;
+      }
 
-  /* mini design system */
-  .ds { display: grid; gap: 22px; }
-  .ds em { display: block; font: 600 12px/1.25 'Nunito', sans-serif; font-style: normal; opacity: .8; }
-  .ds-colors { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px 10px; }
-  .ds-colors li { display: grid; justify-items: center; gap: 4px; text-align: center; font: 800 12px/1 'Nunito', sans-serif; letter-spacing: .3px; }
-  .ds-colors i { margin-bottom: 4px; }
-  .ds-colors i { width: 52px; height: 52px; border-radius: 16px; background: var(--c); border: 3px solid var(--ink); box-shadow: 0 0 0 3px #fff, 0 3px 4px rgba(0, 0, 0, .3); }
-  .ds-row { display: flex; flex-wrap: wrap; gap: 28px 40px; align-items: center; }
-  .ds-type { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 14px; }
-  .ds-type p { margin: 0; }
-  .ds-a { font-size: 44px; line-height: 1.05; }
-  .ds-baloo { font-family: 'Baloo 2', sans-serif; font-weight: 800; }
-  .ds-nunito { font-family: 'Nunito', sans-serif; font-weight: 800; }
-  .ds-name { font: 800 13px/1.2 'Nunito', sans-serif; }
-  .ds-shape { display: flex; align-items: center; gap: 18px; }
-  .ds-chip { width: 76px; height: 54px; background: var(--yellow); border: 3px solid var(--ink); border-radius: 26px; box-shadow: 0 0 0 6px #fff, 0 6px 8px rgba(0, 0, 0, .35); margin: 6px; }
-  .ds-shape ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 800 13px/1.2 'Nunito', sans-serif; }
+      /* mini design system */
+      .ds {
+        display: grid;
+        gap: 22px;
+      }
+      .ds em {
+        display: block;
+        font:
+          600 12px/1.25 "Nunito",
+          sans-serif;
+        font-style: normal;
+        opacity: 0.8;
+      }
+      .ds-colors {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 16px 10px;
+      }
+      .ds-colors li {
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+        text-align: center;
+        font:
+          800 12px/1 "Nunito",
+          sans-serif;
+        letter-spacing: 0.3px;
+      }
+      .ds-colors i {
+        margin-bottom: 4px;
+      }
+      .ds-colors i {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: var(--c);
+        border: 3px solid var(--ink);
+        box-shadow:
+          0 0 0 3px #fff,
+          0 3px 4px rgba(0, 0, 0, 0.3);
+      }
+      .ds-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px 40px;
+        align-items: center;
+      }
+      .ds-type {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 2px 14px;
+      }
+      .ds-type p {
+        margin: 0;
+      }
+      .ds-a {
+        font-size: 44px;
+        line-height: 1.05;
+      }
+      .ds-baloo {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+      }
+      .ds-nunito {
+        font-family: "Nunito", sans-serif;
+        font-weight: 800;
+      }
+      .ds-name {
+        font:
+          800 13px/1.2 "Nunito",
+          sans-serif;
+      }
+      .ds-shape {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .ds-chip {
+        width: 76px;
+        height: 54px;
+        background: var(--yellow);
+        border: 3px solid var(--ink);
+        border-radius: 26px;
+        box-shadow:
+          0 0 0 6px #fff,
+          0 6px 8px rgba(0, 0, 0, 0.35);
+        margin: 6px;
+      }
+      .ds-shape ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 4px;
+        font:
+          800 13px/1.2 "Nunito",
+          sans-serif;
+      }
 
-  @media (min-width: 700px) {
-    :root { --spine-w: 38px; }
-    main { padding-top: 72px; }
-  }
-  @media (min-width: 1100px) {
-    :root { --spine-w: 44px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    summary::after { transition: none; }
-  }
-</style>
-</head>
-<body>
-<div class="spine" aria-hidden="true"></div>
-<main>
-  <h1 class="title sticker">Designing the Sticker Weather website</h1>
+      @media (min-width: 700px) {
+        :root {
+          --spine-w: 38px;
+        }
+        main {
+          padding-top: 72px;
+        }
+      }
+      @media (min-width: 1100px) {
+        :root {
+          --spine-w: 44px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        summary::after {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="spine" aria-hidden="true"></div>
+    <main>
+      <h1 class="title sticker">Designing the Sticker Weather Website</h1>
 
-  <div class="drawers">
-    <details class="sticker">
-      <summary>Why did you make this?</summary>
-      <div class="answer">
-        <ol>
-          <li>I wanted to upcycle my old tablet into a customizable dashboard</li>
-          <li>Weather apps do not have the information I want to see at a glance</li>
-        </ol>
-        <p>Air Quality Index being the most important after all the wildfire smoke we've been getting in the Midwest. As well as UV Index, gotta wear your sunscreen.</p>
-        <!-- TODO: add a pic of my old kindle fire -->
-      </div>
-    </details>
+      <div class="drawers">
+        <details class="sticker">
+          <summary>Why did you make this?</summary>
+          <div class="answer">
+            <ol>
+              <li>
+                I wanted to upcycle my old tablet into a customizable dashboard
+              </li>
+              <li>
+                Weather apps do not have the information I want to see at a
+                glance
+              </li>
+            </ol>
+          </div>
+        </details>
 
-    <details class="sticker">
-      <summary>How did you make this?</summary>
-      <div class="answer">
-        <p>I started by using Claude to do an initial exploration on weather APIs. I wanted to make sure they did not need any keys and had global information.</p>
-        <p>Once I had some sample JSON, I went to Figma to design out two main areas: the canvas where the stickers live and the sticker sheet drawer.</p>
-        <p>After the layouts were done, I got to work on my favorite part of the process: the stickers!! I had so much fun designing the sun conditions with their little faces.</p>
-        <p>Lastly, I used AI to code it into reality. The prototype became a shareable website.</p>
-        <p>tl;dr Sample JSON -> Wireframes -> Figma mockups and assets creation -> Claude Code</p>
-      </div>
-    </details>
+        <details class="sticker">
+          <summary>How did you make this?</summary>
+          <div class="answer">
+            <p>
+              I started by doing an initial exploration on weather APIs. I
+              wanted to make sure they did not need any keys and had global
+              information.
+            </p>
+            <p>
+              Once I had some sample JSON, I went to design the two main spaces:
+              the canvas where the stickers live and the sticker sheet drawer.
+            </p>
+            <p>
+              After the layouts were done, I got to work on my favorite part of
+              the project: the stickers!! I had so much fun designing the sun
+              conditions with their little faces.
+            </p>
+            <p>
+              Lastly, I used AI to code it into reality. The prototype became a
+              shareable website.
+            </p>
+            <p>
+              tl;dr: Sample JSON -> Wireframes -> Figma mockups and assets
+              creation -> Claude Code
+            </p>
+          </div>
+        </details>
 
-    <details class="sticker">
-      <summary>The website is AI-assisted, what did you do vs what did Claude do?</summary>
-      <div class="answer"><p>I designed the layouts, created the sticker assets, and dictated all of the functionality. Claude implemented the API code and website code. After implementation, I did the QA and bug catching.</p></div>
-    </details>
+        <details class="sticker">
+          <summary>What did you do vs. what did the AI do?</summary>
+          <div class="answer">
+            <p>
+              I designed the layouts, created the sticker assets, and dictated
+              all of the functionality. Claude implemented the API and website
+              code. After implementation, I did the QA and bug catching.
+            </p>
+          </div>
+        </details>
 
-    <details class="sticker">
-      <summary>What do the design tokens look like?</summary>
-      <div class="answer">
-        <div class="ds">
-          <ul class="ds-colors" aria-label="Colors">
-            <li><i style="--c:#1b1d2a"></i>#1b1d2a<em>outlines, text</em></li>
-            <li><i style="--c:#232656"></i>#232656<em>night sky</em></li>
-            <li><i style="--c:#ffd23f"></i>#ffd23f<em>sun, selected</em></li>
-            <li><i style="--c:#ff9a76"></i>#ff9a76<em>city, high temp</em></li>
-            <li><i style="--c:#ff7ab8"></i>#ff7ab8<em>clock, labels</em></li>
-            <li><i style="--c:#5ec8ff"></i>#5ec8ff<em>rain</em></li>
-            <li><i style="--c:#8fa8ff"></i>#8fa8ff<em>low temp</em></li>
-            <li><i style="--c:#b8a6ff"></i>#b8a6ff<em>sunset</em></li>
-            <li><i style="--c:#fff2c2"></i>#fff2c2<em>moon, clear night</em></li>
-            <li><i style="--c:#eaf7ff"></i>#eaf7ff<em>clouds, paper</em></li>
-          </ul>
-          <div class="ds-row">
-            <div class="ds-type" aria-label="Type">
-              <p class="ds-a ds-baloo">Aa</p><p class="ds-name">Baloo 2 · 800<em>numbers, titles</em></p>
-              <p class="ds-a ds-nunito">Aa</p><p class="ds-name">Nunito · 600 / 800<em>small labels</em></p>
-            </div>
-            <div class="ds-shape" aria-label="Shape">
-              <span class="ds-chip"></span>
-              <ul><li>3px ink<em>outline</em></li><li>6px white<em>die-cut edge</em></li><li>radius 26<em>soft corners</em></li></ul>
+        <details class="sticker">
+          <summary>What do the design tokens look like?</summary>
+          <div class="answer">
+            <div class="ds">
+              <ul class="ds-colors" aria-label="Colors">
+                <li>
+                  <i style="--c: #1b1d2a"></i>#1b1d2a<em>outlines, text</em>
+                </li>
+                <li><i style="--c: #232656"></i>#232656<em>night sky</em></li>
+                <li>
+                  <i style="--c: #ffd23f"></i>#ffd23f<em>sun, selected</em>
+                </li>
+                <li>
+                  <i style="--c: #ff9a76"></i>#ff9a76<em>city, high temp</em>
+                </li>
+                <li>
+                  <i style="--c: #ff7ab8"></i>#ff7ab8<em>clock, labels</em>
+                </li>
+                <li><i style="--c: #5ec8ff"></i>#5ec8ff<em>rain</em></li>
+                <li><i style="--c: #8fa8ff"></i>#8fa8ff<em>low temp</em></li>
+                <li><i style="--c: #b8a6ff"></i>#b8a6ff<em>sunset</em></li>
+                <li>
+                  <i style="--c: #fff2c2"></i>#fff2c2<em>moon, clear night</em>
+                </li>
+                <li>
+                  <i style="--c: #eaf7ff"></i>#eaf7ff<em>clouds, paper</em>
+                </li>
+              </ul>
+              <div class="ds-row">
+                <div class="ds-type" aria-label="Type">
+                  <p class="ds-a ds-baloo">Aa</p>
+                  <p class="ds-name">Baloo 2 · 800<em>numbers, titles</em></p>
+                  <p class="ds-a ds-nunito">Aa</p>
+                  <p class="ds-name">Nunito · 600 / 800<em>small labels</em></p>
+                </div>
+                <div class="ds-shape" aria-label="Shape">
+                  <span class="ds-chip"></span>
+                  <ul>
+                    <li>3px ink<em>outline</em></li>
+                    <li>6px white<em>die-cut edge</em></li>
+                    <li>border radius 26<em>soft corners</em></li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </details>
+        </details>
 
-    <details class="sticker">
-      <summary>What's next?</summary>
-      <div class="answer"><p>My goal is to make this website an app! I would also like to add more stickers like wind speed or barometric pressure.</p></div>
-    </details>
-  </div>
-</main>
-</body>
+        <details class="sticker">
+          <summary>What's next?</summary>
+          <div class="answer">
+            <p>
+              My goal is to make this website an app! I would also like to add
+              more stickers like wind speed or barometric pressure.
+            </p>
+          </div>
+        </details>
+      </div>
+    </main>
+  </body>
 </html>
