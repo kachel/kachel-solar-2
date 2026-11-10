@@ -44,6 +44,7 @@
         --drawer-h: 252px;
         --drawer-w: 400px;
         --drawer-w-closed: 118px;
+        --max-w: 1600px;
         --spine-w: 30px;
       }
       * {
@@ -75,6 +76,39 @@
         height: var(--app-h, 100dvh);
         display: grid;
         grid-template-rows: 1fr auto;
+        max-width: var(--max-w); /* on very large displays the app stops growing and sits in the middle */
+        margin: 0 auto;
+      }
+      /* very large displays: the notebook sits on a desk, with rounded corners and a shadow */
+      @media (min-width: 1700px) {
+        :root {
+          --drawer-w: 520px; /* room for the bigger stickers */
+        }
+        .slots {
+          gap: 40px 0; /* breathing room between the bigger stickers; also wraps to the second column sooner */
+        }
+        html,
+        body {
+          background-color: #2b2431;
+        }
+        body {
+          background-image:
+            url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='g' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .16 0'/></filter><rect width='300' height='300' filter='url(%23g)'/></svg>"),
+            radial-gradient(
+              ellipse at center,
+              rgba(255, 255, 255, 0.07),
+              transparent 70%
+            );
+        }
+        .app {
+          height: calc(var(--app-h, 100dvh) - 56px);
+          margin: 28px auto;
+          border-radius: 28px;
+          overflow: hidden;
+          box-shadow:
+            0 30px 70px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(255, 255, 255, 0.07);
+        }
       }
       .drawer {
         position: relative;
@@ -1378,6 +1412,7 @@
         }
         .slot {
           width: 50%;
+          flex: none; /* never squeeze a sticker; extra ones wrap into the next column or page */
         }
         .slot[data-alt="0"] {
           translate: -16px 0;
@@ -2537,7 +2572,11 @@
             ? 4
             : 3;
       const stickerScale = () =>
-        matchMedia("(max-width:699px)").matches ? 0.76 : 1;
+        matchMedia("(max-width:699px)").matches
+          ? 0.76
+          : matchMedia("(min-width:1700px)").matches
+            ? 1.4 // large displays: the app stops growing at 1600px, so the stickers grow instead
+            : 1;
       const sz = (def) => {
         const k = stickerScale();
         return { w: Math.round(def.w * k), h: Math.round(def.h * k) };
