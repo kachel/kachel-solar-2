@@ -206,9 +206,28 @@
         }
       }
 
+      .head {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 44px;
+      }
+      /* the sub header: a small pink sticker tucked under the title */
+      .subtitle {
+        position: relative;
+        z-index: 1;
+        margin: -4px 0 0 28px;
+        padding: 8px 18px;
+        border-radius: 999px;
+        background: var(--purple);
+        transform: rotate(1.5deg);
+        font:
+          800 clamp(15px, 3.2vw, 20px)/1.1 "Baloo 2",
+          sans-serif;
+      }
       .title {
         display: inline-block;
-        margin: 0 0 44px;
+        margin: 0;
         padding: 18px 28px;
         background: var(--yellow);
         transform: rotate(-2deg);
@@ -439,7 +458,10 @@
       <nav class="topbar" aria-label="Back to the app">
         <a class="backlink" href="/">&larr; Sticker Weather</a>
       </nav>
-      <h1 class="title sticker">Designing Sticker Weather</h1>
+      <header class="head">
+        <h1 class="title sticker">Designing Sticker Weather</h1>
+        <p class="subtitle sticker">A Mini Case Study</p>
+      </header>
 
       <div class="drawers">
         <details class="sticker">
