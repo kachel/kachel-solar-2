@@ -491,150 +491,156 @@
   </head>
   <body>
     <div class="book">
-    <div class="spine" aria-hidden="true"></div>
-    <main>
-      <nav class="topbar" aria-label="Back to the app">
-        <a class="backlink" href="/">&larr; Sticker Weather</a>
-      </nav>
-      <header class="head">
-        <h1 class="title sticker">Designing Sticker Weather</h1>
-        <p class="subtitle sticker">A Mini Case Study</p>
-      </header>
+      <div class="spine" aria-hidden="true"></div>
+      <main>
+        <nav class="topbar" aria-label="Back to the app">
+          <a class="backlink" href="/">&larr; Sticker Weather</a>
+        </nav>
+        <header class="head">
+          <h1 class="title sticker">Designing Sticker Weather</h1>
+          <p class="subtitle sticker">A Mini Case Study</p>
+        </header>
 
-      <div class="drawers">
-        <details class="sticker">
-          <summary>Why did you make this?</summary>
-          <div class="answer">
-            <ol>
-              <li>
-                I wanted to upcycle my old tablet into a customizable dashboard
-              </li>
-              <li>
-                Weather apps do not have the information I want to see at a
-                glance
-              </li>
-            </ol>
-          </div>
-        </details>
+        <div class="drawers">
+          <details class="sticker">
+            <summary>Why did you make this?</summary>
+            <div class="answer">
+              <ol>
+                <li>
+                  I wanted to upcycle my old tablet into a customizable
+                  dashboard
+                </li>
+                <li>
+                  Weather apps do not have the information I want to see at a
+                  glance
+                </li>
+              </ol>
+            </div>
+          </details>
 
-        <details class="sticker">
-          <summary>How did you make this?</summary>
-          <div class="answer">
-            <p>
-              I started by doing an initial exploration on weather APIs. I
-              wanted to make sure they did not need any keys and had global
-              information.
-            </p>
-            <p>
-              Once I had some sample JSON, I went to design the two main spaces:
-              the canvas where the stickers live and the sticker sheet drawer.
-            </p>
-            <p>
-              After the layouts were done, I got to work on my favorite part of
-              the project: the stickers!! I had so much fun designing the sun
-              conditions with their little faces.
-            </p>
-            <p>
-              Lastly, I used AI to code it into reality. The prototype became a
-              shareable website.
-            </p>
-            <p>
-              tl;dr: Sample JSON -> Wireframes -> Figma mockups and assets
-              creation -> Claude Code
-            </p>
-          </div>
-        </details>
+          <details class="sticker">
+            <summary>How did you make this?</summary>
+            <div class="answer">
+              <p>
+                I started by doing an initial exploration on weather APIs. I
+                wanted to make sure they did not need any keys and had global
+                information.
+              </p>
+              <p>
+                Once I had some sample JSON, I went to design the two main
+                spaces: the canvas where the stickers live and the sticker sheet
+                drawer.
+              </p>
+              <p>
+                After the layouts were done, I got to work on my favorite part
+                of the project: the stickers!! I had so much fun designing the
+                sun conditions with their little faces.
+              </p>
+              <p>
+                Lastly, I used AI to code it into reality. The prototype became
+                a shareable website.
+              </p>
+              <p>
+                tl;dr: Sample JSON -> Wireframes -> Figma mockups and assets
+                creation -> Claude Code
+              </p>
+            </div>
+          </details>
 
-        <details class="sticker">
-          <summary>What did you do vs. what did the AI do?</summary>
-          <div class="answer">
-            <p>
-              I designed the layouts, created the sticker assets, and dictated
-              all of the functionality. Claude implemented the API and website
-              code. After implementation, I did the QA and bug catching.
-            </p>
-          </div>
-        </details>
+          <details class="sticker">
+            <summary>What did you do vs. What did the AI do?</summary>
+            <div class="answer">
+              <p>
+                I designed the layouts, created the sticker assets, and dictated
+                all of the functionality. Claude implemented the API and website
+                code. After implementation, I did the QA and bug catching.
+              </p>
+            </div>
+          </details>
 
-        <details class="sticker">
-          <summary>What do the design tokens look like?</summary>
-          <div class="answer">
-            <div class="ds">
-              <ul class="ds-colors" aria-label="Colors">
-                <li>
-                  <i style="--c: #1b1d2a"></i>#1b1d2a<em>outlines, text</em>
-                </li>
-                <li><i style="--c: #232656"></i>#232656<em>night sky</em></li>
-                <li>
-                  <i style="--c: #ffd23f"></i>#ffd23f<em>sun, selected</em>
-                </li>
-                <li>
-                  <i style="--c: #ff9a76"></i>#ff9a76<em>city, high temp</em>
-                </li>
-                <li>
-                  <i style="--c: #ff7ab8"></i>#ff7ab8<em>clock, labels</em>
-                </li>
-                <li><i style="--c: #5ec8ff"></i>#5ec8ff<em>rain</em></li>
-                <li><i style="--c: #8fa8ff"></i>#8fa8ff<em>low temp</em></li>
-                <li><i style="--c: #b8a6ff"></i>#b8a6ff<em>sunset</em></li>
-                <li>
-                  <i style="--c: #fff2c2"></i>#fff2c2<em>moon, clear night</em>
-                </li>
-                <li>
-                  <i style="--c: #eaf7ff"></i>#eaf7ff<em>clouds, paper</em>
-                </li>
-              </ul>
-              <div class="ds-row">
-                <div class="ds-type" aria-label="Type">
-                  <p class="ds-a ds-baloo">Aa</p>
-                  <p class="ds-name">Baloo 2 · 800<em>numbers, titles</em></p>
-                  <p class="ds-a ds-nunito">Aa</p>
-                  <p class="ds-name">Nunito · 600 / 800<em>small labels</em></p>
-                </div>
-                <div class="ds-shape" aria-label="Shape">
-                  <span class="ds-chip"></span>
-                  <ul>
-                    <li>3px ink<em>outline</em></li>
-                    <li>6px white<em>die-cut edge</em></li>
-                    <li>border radius 26<em>soft corners</em></li>
-                  </ul>
+          <details class="sticker">
+            <summary>What do the design tokens look like?</summary>
+            <div class="answer">
+              <div class="ds">
+                <ul class="ds-colors" aria-label="Colors">
+                  <li>
+                    <i style="--c: #1b1d2a"></i>#1b1d2a<em>outlines, text</em>
+                  </li>
+                  <li><i style="--c: #232656"></i>#232656<em>night sky</em></li>
+                  <li>
+                    <i style="--c: #ffd23f"></i>#ffd23f<em>sun, selected</em>
+                  </li>
+                  <li>
+                    <i style="--c: #ff9a76"></i>#ff9a76<em>city, high temp</em>
+                  </li>
+                  <li>
+                    <i style="--c: #ff7ab8"></i>#ff7ab8<em>clock, labels</em>
+                  </li>
+                  <li><i style="--c: #5ec8ff"></i>#5ec8ff<em>rain</em></li>
+                  <li><i style="--c: #8fa8ff"></i>#8fa8ff<em>low temp</em></li>
+                  <li><i style="--c: #b8a6ff"></i>#b8a6ff<em>sunset</em></li>
+                  <li>
+                    <i style="--c: #fff2c2"></i>#fff2c2<em
+                      >moon, clear night</em
+                    >
+                  </li>
+                  <li>
+                    <i style="--c: #eaf7ff"></i>#eaf7ff<em>clouds, paper</em>
+                  </li>
+                </ul>
+                <div class="ds-row">
+                  <div class="ds-type" aria-label="Type">
+                    <p class="ds-a ds-baloo">Aa</p>
+                    <p class="ds-name">Baloo 2 · 800<em>numbers, titles</em></p>
+                    <p class="ds-a ds-nunito">Aa</p>
+                    <p class="ds-name">
+                      Nunito · 600 / 800<em>small labels</em>
+                    </p>
+                  </div>
+                  <div class="ds-shape" aria-label="Shape">
+                    <span class="ds-chip"></span>
+                    <ul>
+                      <li>3px ink<em>outline</em></li>
+                      <li>6px white<em>die-cut edge</em></li>
+                      <li>border radius 26<em>soft corners</em></li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </details>
+          </details>
 
-        <details class="sticker">
-          <summary>What's next?</summary>
-          <div class="answer">
-            <p>
-              My goal is to make this website an app! I would also like to add
-              more stickers like wind speed or barometric pressure.
-            </p>
-          </div>
-        </details>
-      </div>
+          <details class="sticker">
+            <summary>What's next?</summary>
+            <div class="answer">
+              <p>
+                My goal is to make this website an app! I would also like to add
+                more stickers like wind speed or barometric pressure.
+              </p>
+            </div>
+          </details>
+        </div>
 
-      <div class="footbtns">
-        <a class="backfoot" href="/">
-          <span class="backsticker sticker"
-            ><img src="favicon-light.svg" alt="" width="54" height="54"
-          /></span>
-          <span class="backlabel sticker">Sticker Weather</span>
-        </a>
-        <a class="backfoot aboutme" href="https://kachel.work">
-          <span class="backsticker sticker portrait"
-            ><img
-              id="stardew-portrait"
-              src="stardew-portrait.png"
-              alt="stardew valley style portrait picture of a white woman with dark blonde hair and blue eyes. she is wearing a pink and orange shirt with a purple collar."
-              width="256"
-              height="256"
-          /></span>
-          <span class="backlabel sticker">About Me</span>
-        </a>
-      </div>
-    </main>
+        <div class="footbtns">
+          <a class="backfoot" href="/">
+            <span class="backsticker sticker"
+              ><img src="favicon-light.svg" alt="" width="54" height="54"
+            /></span>
+            <span class="backlabel sticker">Sticker Weather</span>
+          </a>
+          <a class="backfoot aboutme" href="https://kachel.work">
+            <span class="backsticker sticker portrait"
+              ><img
+                id="stardew-portrait"
+                src="stardew-portrait.png"
+                alt="stardew valley style portrait picture of a white woman with dark blonde hair and blue eyes. she is wearing a pink and orange shirt with a purple collar."
+                width="256"
+                height="256"
+            /></span>
+            <span class="backlabel sticker">About Me</span>
+          </a>
+        </div>
+      </main>
     </div>
   </body>
 </html>
