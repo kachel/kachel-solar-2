@@ -121,23 +121,22 @@
         text-decoration: underline;
         text-underline-offset: 4px;
       }
-      /* bottom middle: two round sticker buttons, each with a label that appears on hover or tap */
+      /* bottom middle: two round sticker buttons, each with its label underneath; one tap or click follows the link */
       .footbtns {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 28px 64px;
+        align-items: flex-start;
+        gap: 36px 56px;
         margin: 64px 0 56px;
       }
       .backfoot {
-        position: relative;
-        display: block;
-        width: 84px;
-        height: 84px;
-        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
         color: var(--ink);
         text-decoration: none;
-        border-radius: 50%;
         -webkit-tap-highlight-color: transparent;
       }
       .backsticker {
@@ -152,8 +151,7 @@
       }
       .backfoot:hover .backsticker,
       .backfoot:focus-visible .backsticker,
-      .backfoot:active .backsticker,
-      .backfoot.show .backsticker {
+      .backfoot:active .backsticker {
         transform: rotate(-4deg) scale(1.06);
       }
       .backsticker img {
@@ -174,41 +172,38 @@
       }
       .aboutme:hover .backsticker,
       .aboutme:focus-visible .backsticker,
-      .aboutme:active .backsticker,
-      .aboutme.show .backsticker {
+      .aboutme:active .backsticker {
         transform: rotate(4deg) scale(1.06);
       }
       .aboutme .backlabel {
         background: var(--blue);
       }
-      /* the label stays out of the way until hover, keyboard focus or a tap */
       .backlabel {
-        position: absolute;
-        left: 50%;
-        top: calc(100% + 22px);
         padding: 12px 22px;
         border-radius: 999px;
         background: var(--pink);
         white-space: nowrap;
-        pointer-events: none;
+        text-align: center;
         font:
           800 18px/1 "Baloo 2",
           sans-serif;
-        opacity: 0;
-        transform: translate(-50%, -6px) rotate(-2deg);
-        transition:
-          opacity 0.15s ease,
-          transform 0.15s ease;
-      }
-      .backfoot:hover .backlabel,
-      .backfoot:focus-visible .backlabel,
-      .backfoot:active .backlabel,
-      .backfoot.show .backlabel {
-        opacity: 1;
-        transform: translate(-50%, 0) rotate(-2deg);
+        transform: rotate(-2deg);
       }
       .backfoot:focus-visible {
         outline-offset: 10px;
+        border-radius: 26px;
+      }
+      @media (max-width: 699px) {
+        .footbtns {
+          gap: 28px 36px;
+        }
+        .backfoot {
+          gap: 14px;
+        }
+        .backlabel {
+          padding: 8px 14px;
+          font-size: 14px;
+        }
       }
 
       .title {
@@ -561,19 +556,13 @@
       </div>
 
       <div class="footbtns">
-        <a class="backfoot" href="/" aria-label="Back to Sticker Weather">
+        <a class="backfoot" href="/">
           <span class="backsticker sticker"
             ><img src="favicon-light.svg" alt="" width="54" height="54"
           /></span>
-          <span class="backlabel sticker" aria-hidden="true"
-            >Sticker Weather</span
-          >
+          <span class="backlabel sticker">Sticker Weather</span>
         </a>
-        <a
-          class="backfoot aboutme"
-          href="https://kachel.work"
-          aria-label="About Me"
-        >
+        <a class="backfoot aboutme" href="https://kachel.work">
           <span class="backsticker sticker portrait"
             ><img
               id="stardew-portrait"
@@ -582,36 +571,9 @@
               width="256"
               height="256"
           /></span>
-          <span class="backlabel sticker" aria-hidden="true">About Me</span>
+          <span class="backlabel sticker">About Me</span>
         </a>
       </div>
     </main>
-    <script>
-      /* touch screens have no hover: the first tap on a button shows its label, a second tap follows the link */
-      (function () {
-        var links = document.querySelectorAll(".backfoot"),
-          timer;
-        function hide() {
-          links.forEach(function (l) {
-            l.classList.remove("show");
-          });
-          clearTimeout(timer);
-        }
-        links.forEach(function (link) {
-          link.addEventListener("click", function (e) {
-            if (!window.matchMedia("(hover: none)").matches) return;
-            if (link.classList.contains("show")) return; // second tap: follow the link
-            e.preventDefault();
-            hide();
-            link.classList.add("show");
-            timer = setTimeout(hide, 4000); // forgets the first tap after a few seconds
-          });
-        });
-        document.addEventListener("pointerdown", function (e) {
-          if (!e.target.closest(".backfoot")) hide();
-        });
-        window.addEventListener("pageshow", hide);
-      })();
-    </script>
   </body>
 </html>
