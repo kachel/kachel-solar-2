@@ -716,6 +716,28 @@
         font:
           700 16px/1 "Nunito",
           sans-serif;
+        /* the focus ring is always there but invisible, so it can fade and grow in and out */
+        outline: 3px dashed transparent;
+        outline-offset: 0;
+        transition:
+          outline-color 0.25s ease,
+          outline-offset 0.25s ease;
+      }
+      #cityInput:focus-visible {
+        outline-color: var(--purple);
+        outline-offset: 5px;
+      }
+      html[data-theme="simple"] #cityInput {
+        outline-style: solid;
+        outline-width: 2.5px;
+      }
+      html[data-theme="simple"] #cityInput:focus-visible {
+        outline-offset: 4px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #cityInput {
+          transition: none;
+        }
       }
       #cityInput::placeholder {
         color: var(--ink);
@@ -3412,6 +3434,7 @@
         cityActive = -1;
         renderCityList();
         cityInput.value = "";
+        cityInput.blur(); // a city is chosen: let go of the field so its focus ring fades away
         cityMsg.textContent = "Updating…";
         renderAll();
         loadData().then(() => {
